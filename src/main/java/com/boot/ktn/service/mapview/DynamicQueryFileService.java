@@ -29,11 +29,6 @@ public class DynamicQueryFileService {
     @Getter
     String errorMessage;
 
-    private String createCallString(String procedureName, int paramCount) {
-        String placeholders = String.join(",", Collections.nCopies(paramCount, "?"));
-        return "{call " + procedureName + "(" + placeholders + ")}";
-    }
-
     public List<Map<String, Object>> executeDynamicFileQuery(String procedureCall, List<Object> originalParams) {
         List<Map<String, Object>> mappedResult = new ArrayList<>();
         Connection connection = null;
@@ -44,7 +39,9 @@ public class DynamicQueryFileService {
             String procedureName = procedureCall.substring(0, procedureCall.indexOf('(')).trim();
             String paramString = procedureTAB("(", ")", procedureCall).trim();
             List<Object> params = parseParameters(paramString, originalParams);
-            String callString = createCallString(procedureName, params.size());
+            // Modified: Construct EXEC statement without curly braces for MSSQL
+            String placeholders = String.join(",", Collections.nCopies(params.size(), "?"));
+            String callString = "EXEC " + procedureName + " " + placeholders;
 
             connection = DataSourceUtils.getConnection(dataSource);
             if (connection == null) {
@@ -53,12 +50,15 @@ public class DynamicQueryFileService {
                 throw new IllegalStateException("Unable to obtain JDBC Connection from DataSource");
             }
 
+            // Modified: Use plain EXEC statement without {} wrapping
             stmt = connection.prepareCall(callString);
 
+            // Modified: Set parameters, handling byte[] and strings appropriately
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
-                    stmt.setString(i + 1, (String) param);
+                    String value = ((String) param).replace("''", "'"); // Undo double-quote escaping
+                    stmt.setString(i + 1, value);
                 } else if (param instanceof byte[]) {
                     byte[] data = (byte[]) param;
                     if (data.length > fileConfig.getMaxFileSize()) {
@@ -127,10 +127,14 @@ public class DynamicQueryFileService {
         ResultSet rs = null;
 
         try {
-            String procedureName = procedureCall.substring(0, procedureCall.indexOf('(')).trim();
-            String paramString = procedureTAB("(", ")", procedureCall).trim();
+            // Modified: Extract procedureName safely, handling cases with no space
+            int spaceIndex = procedureCall.indexOf(' ');
+            String procedureName = spaceIndex != -1 ? procedureCall.substring(0, spaceIndex).trim() : procedureCall.trim();
+            String paramString = spaceIndex != -1 ? procedureCall.substring(spaceIndex + 1).trim() : "";
             List<Object> params = parseParameters(paramString, Collections.emptyList());
-            String callString = createCallString(procedureName, params.size());
+            // Modified: Construct EXEC statement without curly braces for MSSQL
+            String placeholders = String.join(",", Collections.nCopies(params.size(), "?"));
+            String callString = "EXEC " + procedureName + (params.isEmpty() ? "" : " " + placeholders);
 
             connection = DataSourceUtils.getConnection(dataSource);
             if (connection == null) {
@@ -139,12 +143,22 @@ public class DynamicQueryFileService {
                 throw new IllegalStateException("Unable to obtain JDBC Connection from DataSource");
             }
 
+            // Modified: Use plain EXEC statement without {} wrapping
             stmt = connection.prepareCall(callString);
 
+            // Modified: Set parameters, handling quoted strings and byte[]
             for (int i = 0; i < params.size(); i++) {
                 Object param = params.get(i);
                 if (param instanceof String) {
-                    stmt.setString(i + 1, (String) param);
+                    String value = ((String) param).replace("''", "'"); // Undo double-quote escaping
+                    stmt.setString(i + 1, value);
+                } else if (param instanceof byte[]) {
+                    byte[] data = (byte[]) param;
+                    if (data.length > fileConfig.getMaxFileSize()) {
+                        logger.error("Parameter {} exceeds file size limit of {}MB", i + 1, fileConfig.getMaxFileSize() / (1024 * 1024));
+                        throw new IllegalArgumentException("File size exceeds limit");
+                    }
+                    stmt.setBinaryStream(i + 1, new ByteArrayInputStream(data), data.length);
                 } else {
                     stmt.setObject(i + 1, param);
                 }
@@ -237,13 +251,14 @@ public class DynamicQueryFileService {
             return params;
         }
 
-        String[] paramArray = paramString.split(",\\s*");
+        // Modified: Handle quoted strings and unquoted byte[] parameters
+        String[] paramArray = paramString.split(",\\s*(?=(?:(?:[^']*'){2})*[^']*$)"); // Split outside quotes
         int originalParamIndex = 0;
 
         for (String param : paramArray) {
             param = param.trim();
             if (param.startsWith("'") && param.endsWith("'")) {
-                String value = param.substring(1, param.length() - 1).replace("''", "'");
+                String value = param.substring(1, param.length() - 1).replace("''", "'"); // Remove quotes and unescape
                 if ("DATA".equals(value) && originalParamIndex < originalParams.size() && originalParams.get(originalParamIndex) instanceof byte[]) {
                     params.add(originalParams.get(originalParamIndex));
                 } else {
@@ -276,10 +291,10 @@ public class DynamicQueryFileService {
 
     private String procedureTAB(String open, String close, String procedureCall) {
         int start = procedureCall.indexOf(open) + 1;
-        int end = procedureCall.lastIndexOf(close);
-        if (start < 0 || end < 0 || start >= end) {
+        int end = close.isEmpty() ? procedureCall.length() : procedureCall.lastIndexOf(close);
+        if (start <= 0 || end < 0 || start >= end) { // Modified: Handle start <= 0
             return "";
         }
-        return procedureCall.substring(start, end);
+        return procedureCall.substring(start, end).trim();
     }
 }

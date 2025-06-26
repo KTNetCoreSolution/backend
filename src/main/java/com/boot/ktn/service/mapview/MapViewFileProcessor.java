@@ -203,10 +203,17 @@ public class MapViewFileProcessor {
             }
 
             String procedureName = procInfo.getJobNm();
+            // Modified: Construct EXEC-compatible call string with quotes for strings, no quotes for byte[]
             String joinedParams = params.stream()
-                    .map(param -> "'" + param.replace("'", "''") + "'")
+                    .map(param -> {
+                        if (param.startsWith("[") && param.endsWith("]")) { // Handle byte[] parameters
+                            return param; // No quotes for Base64-encoded byte[]
+                        } else {
+                            return "'" + param.replace("'", "''") + "'"; // Add quotes for string parameters
+                        }
+                    })
                     .collect(Collectors.joining(", "));
-            procInfo.setDynamicCall(procedureName + "(" + joinedParams + ")");
+            procInfo.setDynamicCall(procedureName + " " + joinedParams); // Use space for MSSQL EXEC
         } catch (IllegalArgumentException e) {
             errorMessage = "Validation error for rptCd: " + rptCd;
             logger.error(this.getErrorMessage(), e.getMessage(), e);
@@ -235,7 +242,7 @@ public class MapViewFileProcessor {
                     });
                     return unescapedRow;
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()); // Fixed: Ensured correct syntax
 
         return unescapedResultList;
     }

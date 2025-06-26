@@ -29,11 +29,6 @@ public class DynamicQueryService {
     @Getter
     String errorMessage;
 
-    private String createCallString(String procedureName, int paramCount) {
-        String placeholders = String.join(",", Collections.nCopies(paramCount, "?"));
-        return "{call " + procedureName + "(" + placeholders + ")}";
-    }
-
     public List<Map<String, Object>> executeDynamicQuery(String procedureCall) {
         List<Map<String, Object>> mappedResult = new ArrayList<>();
         Connection connection = null;
@@ -44,7 +39,8 @@ public class DynamicQueryService {
             String procedureName = procedureCall.substring(0, procedureCall.indexOf('(')).trim();
             String paramString = procedureTAB("(", ")", procedureCall).trim();
             List<String> params = parseParameters(paramString);
-            String callString = createCallString(procedureName, params.size());
+            String placeholders = String.join(",", Collections.nCopies(params.size(), "?"));
+            String callString = "EXEC " + procedureName + " " + placeholders;
 
             connection = DataSourceUtils.getConnection(dataSource);
             if (connection == null) {
@@ -54,7 +50,7 @@ public class DynamicQueryService {
             stmt = connection.prepareCall(callString);
 
             for (int i = 0; i < params.size(); i++) {
-                String param = params.get(i);
+                String param = params.get(i).replace("''", "'"); // Undo double-quote escaping
                 stmt.setString(i + 1, param);
             }
 

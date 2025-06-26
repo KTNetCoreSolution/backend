@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Mapper
 public interface LoginResultMapper {
-    @Select("CALL UP_LOGINHIST_TRANSACTION(#{empNo}, #{ip}, #{userConGb}, #{userAgent});")
+    @Select("EXEC UP_LOGINHIST_TRANSACTION #{empNo}, #{ip}, #{userConGb}, #{userAgent};")
     Map<String, Object> loginResultProcedure(@Param("empNo") String empNo,
                                        @Param("ip") String ip,
                                        @Param("userConGb") String userConGb,

@@ -56,9 +56,12 @@ dependencies {
 	// MyBatis
 	implementation "org.mybatis.spring.boot:mybatis-spring-boot-starter:${mybatisVersion}" // MyBatis 통합
 
+	// Mssql
+	implementation "com.microsoft.sqlserver:mssql-jdbc:${mssqlVersion}" // MSSQL 연동
+
 	// MariaDB
-	implementation "org.mariadb.jdbc:mariadb-java-client:${mariadbVersion}"      // MariaDB 연동
-	runtimeOnly "org.mariadb.jdbc:mariadb-java-client"                           // MariaDB 드라이버 런타임
+	//implementation "org.mariadb.jdbc:mariadb-java-client:${mariadbVersion}"      // MariaDB 연동
+	//runtimeOnly "org.mariadb.jdbc:mariadb-java-client"                           // MariaDB 드라이버 런타임
 
 	// Lombok (코드 생성을 도와주는 도구)
 	compileOnly 'org.projectlombok:lombok'

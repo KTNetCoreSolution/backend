@@ -85,10 +85,10 @@
       "copyright": "Copyright © The Apache Software Foundation"
     },
     {
-      "library": "MariaDB Java Client",
-      "license": "LGPL v2.1",
-      "url": "https://mariadb.org/",
-      "copyright": "Copyright © MariaDB"
+      "library": "Microsoft JDBC Driver for SQL Server",
+      "license": "MIT License",
+      "url": "https://learn.microsoft.com/en-us/sql/connect/jdbc/microsoft-jdbc-driver-for-sql-server",
+      "copyright": "Copyright © Microsoft Corporation"
     },
     {
       "library": "Lombok",
