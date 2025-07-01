@@ -1,0 +1,36 @@
+name: Deploy Backend (Dev)
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy-backend:
+    runs-on: [self-hosted, windows, dev]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build backend
+        run: ./gradlew clean build
+        working-directory: D:\netcore\backend
+      - name: Deploy backend
+        run: |
+          Stop-Process -Name "java" -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath "java" -ArgumentList "-jar build\libs\your-app.jar" -WorkingDirectory D:\netcore\deploy\backend -NoNewWindow
+        working-directory: D:\netcore\backend
+      - name: Backup source
+        run: |
+          $date = Get-Date -Format "yyyyMM"
+          $day = Get-Date -Format "yyyyMMdd"
+          New-Item -ItemType Directory -Path D:\netcore\backup\source\backend\$date -Force
+          Compress-Archive -Path D:\netcore\backend\* -DestinationPath D:\netcore\backup\source\backend\$date\$day.zip -Force
+      - name: Backup deploy
+        run: |
+          $date = Get-Date -Format "yyyyMM"
+          $day = Get-Date -Format "yyyyMMdd"
+          New-Item -ItemType Directory -Path D:\netcore\backup\deploy\backend\$date -Force
+          Compress-Archive -Path D:\netcore\deploy\backend\* -DestinationPath D:\netcore\backup\deploy\backend\$date\$day.zip -Force
