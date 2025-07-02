@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.NETCORE_DEV_APP_TOKEN }}
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -16,21 +18,22 @@ jobs:
           distribution: 'temurin'
       - name: Build backend
         run: ./gradlew clean build
-        working-directory: D:\netcore\backend
+        working-directory: ${{ github.workspace }}/source/backend
+      - name: Copy JAR to deploy
+        run: Copy-Item -Path "${{ github.workspace }}/source/backend/build/libs/netcore.jar" -Destination "${{ github.workspace }}/deploy/backend/netcore.jar" -Force
       - name: Deploy backend
         run: |
           Stop-Process -Name "java" -Force -ErrorAction SilentlyContinue
-          Start-Process -FilePath "java" -ArgumentList "-jar build\libs\your-app.jar" -WorkingDirectory D:\netcore\deploy\backend -NoNewWindow
-        working-directory: D:\netcore\backend
+          Start-Process -FilePath "java" -ArgumentList "-jar ${{ github.workspace }}/deploy/backend/netcore.jar" -WorkingDirectory "${{ github.workspace }}/deploy/backend" -NoNewWindow
       - name: Backup source
         run: |
           $date = Get-Date -Format "yyyyMM"
           $day = Get-Date -Format "yyyyMMdd"
-          New-Item -ItemType Directory -Path D:\netcore\backup\source\backend\$date -Force
-          Compress-Archive -Path D:\netcore\backend\* -DestinationPath D:\netcore\backup\source\backend\$date\$day.zip -Force
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/backup/source/backend/$date" -Force
+          Compress-Archive -Path "${{ github.workspace }}/source/backend/*" -DestinationPath "${{ github.workspace }}/backup/source/backend/$date/$day.zip" -Force
       - name: Backup deploy
         run: |
           $date = Get-Date -Format "yyyyMM"
           $day = Get-Date -Format "yyyyMMdd"
-          New-Item -ItemType Directory -Path D:\netcore\backup\deploy\backend\$date -Force
-          Compress-Archive -Path D:\netcore\deploy\backend\* -DestinationPath D:\netcore\backup\deploy\backend\$date\$day.zip -Force
+          New-Item -ItemType Directory -Path "${{ github.workspace }}/backup/deploy/backend/$date" -Force
+          Compress-Archive -Path "${{ github.workspace }}/deploy/backend/*" -DestinationPath "${{ github.workspace }}/backup/deploy/backend/$date/$day.zip" -Force
