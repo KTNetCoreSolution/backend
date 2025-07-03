@@ -5,7 +5,7 @@ on:
       - main
 jobs:
   deploy-backend:
-    runs-on: [self-hosted, windows, dev]
+    runs-on: [self-hosted, Windows, X64, dev-runner]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
