@@ -1,39 +1,93 @@
 name: Deploy Backend (Dev)
+
 on:
   push:
     branches:
       - main
+
 jobs:
   deploy-backend:
     runs-on: [self-hosted, Windows, X64, dev-runner]
+
     steps:
-      - name: Checkout code
+      # 1. 현재 소스 코드 백업
+      - name: Backup current source
+        run: |
+          $baseDir = 'D:\actions_work\netcore'
+          $sourceDir = "$baseDir\source\backend"
+          $backupBaseDir = "$baseDir\backup\source\backend"
+          $currentMonthDir = "$backupBaseDir\$(Get-Date -Format 'yyyyMM')"
+          $currentDateTime = "$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+
+          if (!(Test-Path -Path $currentMonthDir)) {
+            New-Item -ItemType Directory -Path $currentMonthDir -Force
+          }
+
+          $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
+          Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
+          Write-Host "Source backup created at: $backupFile"
+
+      # 2. 현재 배포 파일 백업
+      - name: Backup current deploy files
+        run: |
+          $baseDir = 'D:\actions_work\netcore'
+          $deployDir = "$baseDir\deploy\backend"
+          $backupBaseDir = "$baseDir\backup\deploy\backend"
+          $currentMonthDir = "$backupBaseDir\$(Get-Date -Format 'yyyyMM')"
+          $currentDateTime = "$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+
+          if (!(Test-Path -Path $currentMonthDir)) {
+            New-Item -ItemType Directory -Path $currentMonthDir -Force
+          }
+
+          $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
+          Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
+          Write-Host "Deploy backup created at: $backupFile"
+
+      # 3. 최신 소스 코드 Checkout (GitHub 레포지토리에서 소스 가져오기)
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.NETCORE_DEV_APP_TOKEN }}
-      - name: Setup Java
+          repository: KTNetCoreSolution/backend
+          ref: main
+          token: ${{ secrets.NETCORE_DEV_BACKEND_APP_TOKEN }}
+          path: source/backend
+
+      # 4. Java 설치
+      - name: Install Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build backend
+
+      # 5. Backend 빌드
+      - name: Build Backend
         run: ./gradlew clean build
-        working-directory: ${{ github.workspace }}/source/backend
-      - name: Copy JAR to deploy
-        run: Copy-Item -Path "${{ github.workspace }}/source/backend/build/libs/netcore.jar" -Destination "${{ github.workspace }}/deploy/backend/netcore.jar" -Force
-      - name: Deploy backend
+        working-directory: D:\actions_work\netcore\source\backend
+
+      # 6. JAR 파일 배포 (복사)
+      - name: Deploy JAR
         run: |
+          $sourceDir = 'D:\actions_work\netcore\source\backend'
+          $deployDir = 'D:\actions_work\netcore\deploy\backend'
+          $jarFile = "$sourceDir\build\libs\netcore.jar"
+
+          if (!(Test-Path -Path $deployDir)) {
+            New-Item -ItemType Directory -Path $deployDir -Force
+          }
+
+          Copy-Item -Path $jarFile -Destination "$deployDir\netcore.jar" -Force
+          Write-Host "JAR deployed to: $deployDir\netcore.jar"
+
+      # 7. 배포된 JAR 파일 실행 (Java 애플리케이션 재시작)
+      - name: Start Backend
+        run: |
+          $jarFile = "D:\actions_work\netcore\deploy\backend\netcore.jar"
+
+          # 현재 실행 중인 Java 프로세스 종료
           Stop-Process -Name "java" -Force -ErrorAction SilentlyContinue
-          Start-Process -FilePath "java" -ArgumentList "-jar ${{ github.workspace }}/deploy/backend/netcore.jar" -WorkingDirectory "${{ github.workspace }}/deploy/backend" -NoNewWindow
-      - name: Backup source
-        run: |
-          $date = Get-Date -Format "yyyyMM"
-          $day = Get-Date -Format "yyyyMMdd"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/backup/source/backend/$date" -Force
-          Compress-Archive -Path "${{ github.workspace }}/source/backend/*" -DestinationPath "${{ github.workspace }}/backup/source/backend/$date/$day.zip" -Force
-      - name: Backup deploy
-        run: |
-          $date = Get-Date -Format "yyyyMM"
-          $day = Get-Date -Format "yyyyMMdd"
-          New-Item -ItemType Directory -Path "${{ github.workspace }}/backup/deploy/backend/$date" -Force
-          Compress-Archive -Path "${{ github.workspace }}/deploy/backend/*" -DestinationPath "${{ github.workspace }}/backup/deploy/backend/$date/$day.zip" -Force
+          Write-Host "Existing Java process stopped (if it was running)."
+
+          # 새 Java 애플리케이션 시작
+          Start-Process -FilePath "java" -ArgumentList "-jar $jarFile" -WorkingDirectory "D:\actions_work\netcore\deploy\backend" -NoNewWindow
+          Write-Host "Java process started successfully with JAR: $jarFile"
