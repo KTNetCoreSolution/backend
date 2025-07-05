@@ -6,8 +6,8 @@ on:
       - main
 
 permissions:
-  contents: write            
-  id-token: write            
+  contents: write
+  id-token: write
 
 jobs:
   deploy-backend:
@@ -50,28 +50,39 @@ jobs:
           Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
           Write-Host "✅ Deploy backup created at: $backupFile"
 
-      # 3. 최신 소스 코드 Checkout
+      # 3. 최신 소스 코드 가져오기 (Git 명령어 사용)
       - name: Checkout Source Code
-        uses: actions/checkout@v4
-        with:
-          repository: KTNetCoreSolution/backend
-          ref: main
-          token: ${{ secrets.NETCORE_DEV_BACKEND_APP_TOKEN }}
-          path: source/backend
+        shell: pwsh
+        run: |
+          $repoUrl = 'https://:${{ secrets.GITHUB_TOKEN }}@github.com//.git'  # GitHub 리포지토리 URL (인증 포함)
+          $branch = 'main'
+          $sourceDir = 'D:\actions_work\netcore\source\backend'
 
-      # 4. Java 설치 (설치 스킵 설정 추가)
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'  # 이미 설치된 버전 사용
-          distribution: 'temurin'
-          check-latest: false # 최신 버전 다운로드 방지, 설치된 버전 사용
+          if (!(Test-Path -Path $sourceDir)) {
+            New-Item -ItemType Directory -Path $sourceDir -Force
+          }
+
+          cd $sourceDir
+          git init
+          git remote add origin $repoUrl
+          git fetch origin $branch --force
+          git reset --hard origin/$branch
+          Write-Host "✅ Source code checked out to: $sourceDir"
+
+      # 4. Java 설정 확인하기
+      - name: Verify Java Environment
+        shell: pwsh
+        run: |
+          Write-Host "Checking Java version..."
+          java -version
+          Write-Host "✅ Java environment verified."
 
       # 5. Backend 빌드
       - name: Build Backend
-        shell: bash
-        run: ./gradlew clean build
-        working-directory: D:/actions_work/netcore/source/backend
+        shell: pwsh
+        run: |
+          cd D:/actions_work/netcore/source/backend
+          gradle clean build
 
       # 6. JAR 파일 복사 및 배포
       - name: Deploy JAR
@@ -98,14 +109,13 @@ jobs:
         run: |
           $jarFile = "D:\actions_work\netcore\deploy\backend\netcore.jar"
 
-          # 기존 Java 프로세스 종료
-          $javaProcesses = Get-Process -Name "java" -ErrorAction SilentlyContinue
-          if ($javaProcesses) {
-            $javaProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-            Write-Host "♻️ Existing Java processes terminated."
-          } else {
-            Write-Host "➡️ No running Java process found."
+          # 기존 JAR 프로세스 종료
+          $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
+          if ($process) {
+            $process | Stop-Process -Force
+            Write-Host "✅ Previous Java process stopped."
+          }
 
-          # 새 Java 애플리케이션 실행
-          Start-Process -FilePath "java" -ArgumentList "-jar $jarFile" -WorkingDirectory "D:\actions_work\netcore\deploy\backend" -NoNewWindow
-          Write-Host "✅ Java application started successfully with JAR: $jarFile"
+          # 새 JAR 실행
+          Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -NoNewWindow -PassThru
+          Write-Host "✅ Backend service restarted with $jarFile"
