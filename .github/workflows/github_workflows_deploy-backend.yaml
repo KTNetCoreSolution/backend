@@ -16,8 +16,9 @@ jobs:
     steps:
       ### 1. Git Safe Directory 설정
       - name: Add Safe Directory
-        run: git config --global --add safe.directory D:/actions_work/netcore/source/backend
-        shell: bash
+        shell: powershell
+        run: |
+          git config --global --add safe.directory D:/actions_work/netcore/source/backend
 
       ### 2. 현재 소스 코드 백업
       - name: Backup current source
@@ -27,45 +28,19 @@ jobs:
           $sourceDir = "$baseDir\source\backend"
           $backupBaseDir = "$baseDir\backup\source\backend"
 
-          # 현재 월별 및 시간별 경로 설정
           $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
           $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
 
-          # 백업 디렉터리가 없으면 생성
           if (!(Test-Path -Path $currentMonthDir)) {
             New-Item -ItemType Directory -Path $currentMonthDir -Force
           }
 
-          # 소스 디렉터리 압축
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
 
           Write-Output "✅ Source backup created at: $backupFile"
 
-      ### 3. 현재 배포 파일 백업
-      - name: Backup current deploy files
-        shell: powershell
-        run: |
-          $baseDir = 'D:\actions_work\netcore'
-          $deployDir = "$baseDir\deploy\backend"
-          $backupBaseDir = "$baseDir\backup\deploy\backend"
-          
-          # 월별 및 시간별 경로 설정
-          $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
-          $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
-
-          # 백업 디렉터리가 없으면 생성
-          if (!(Test-Path -Path $currentMonthDir)) {
-            New-Item -ItemType Directory -Path $currentMonthDir -Force
-          }
-
-          # 배포 디렉터리 압축
-          $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
-          Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
-
-          Write-Output "✅ Deploy backup created at: $backupFile"
-
-      ### 4. 최신 소스 코드 가져오기
+      ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
         shell: powershell
         run: |
@@ -73,17 +48,17 @@ jobs:
           $branch = 'main'
           $sourceDir = 'D:\actions_work\netcore\source\backend'
 
-          # 기존 디렉터리 삭제로 중첩 방지
           if (Test-Path -Path $sourceDir) {
-            Remove-Item -Recurse -Force -Path $sourceDir
+              Remove-Item -Recurse -Force -Path $sourceDir
+              Write-Output "✅ Removed existing $sourceDir"
           }
-          New-Item -ItemType Directory -Path $sourceDir -Force
 
-          # 소스 코드 클론
+          New-Item -ItemType Directory -Path $sourceDir -Force
           git clone --branch $branch $repoUrl $sourceDir
+
           Write-Output "✅ Source code cloned to: $sourceDir"
 
-      ### 5. Java 환경 확인
+      ### 4. Java 환경 확인
       - name: Verify Java Environment
         shell: powershell
         run: |
@@ -91,14 +66,14 @@ jobs:
           java -version
           Write-Output "✅ Java environment verified."
 
-      ### 6. Backend 빌드
+      ### 5. Backend 빌드
       - name: Build Backend
         shell: powershell
         run: |
           cd D:/actions_work/netcore/source/backend
           gradle clean build
 
-      ### 7. 배포된 JAR 실행 (애플리케이션 재시작)
+      ### 6. 배포된 JAR 실행 (애플리케이션 재시작)
       - name: Restart Backend Service
         shell: powershell
         run: |
@@ -106,13 +81,11 @@ jobs:
           $deployDir = 'D:\actions_work\netcore\deploy\backend'
           $jarFile = Join-Path -Path $deployDir -ChildPath "netcore.jar"
 
-          # 기존 애플리케이션 프로세스 종료
           $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
           if ($process) {
             Stop-Process -Id $process.Id -Force
             Write-Output "✅ Stopped existing java process: $process.Id"
           }
 
-          # 배포된 JAR 실행
           Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -WorkingDirectory $deployDir
           Write-Output "✅ Backend service restarted using JAR at: $jarFile"
