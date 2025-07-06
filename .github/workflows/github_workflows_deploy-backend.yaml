@@ -14,47 +14,57 @@ jobs:
     runs-on: [self-hosted, Windows, X64, backend-dev]
 
     steps:
-      # 1. 현재 소스 코드 백업
+      ### 1. 현재 소스 코드 백업
       - name: Backup current source
         shell: pwsh
         run: |
           $baseDir = 'D:\actions_work\netcore'
           $sourceDir = "$baseDir\source\backend"
           $backupBaseDir = "$baseDir\backup\source\backend"
+
+          # 현재 월별 및 시간별 경로 설정
           $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
           $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
 
+          # 백업 디렉터리가 없으면 생성
           if (!(Test-Path -Path $currentMonthDir)) {
             New-Item -ItemType Directory -Path $currentMonthDir -Force
           }
 
+          # 소스 디렉터리 압축
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
+
           Write-Host "✅ Source backup created at: $backupFile"
 
-      # 2. 현재 배포 파일 백업
+      ### 2. 현재 배포 파일 백업
       - name: Backup current deploy files
         shell: pwsh
         run: |
           $baseDir = 'D:\actions_work\netcore'
           $deployDir = "$baseDir\deploy\backend"
           $backupBaseDir = "$baseDir\backup\deploy\backend"
+          
+          # 월별 및 시간별 경로 설정
           $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
           $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
 
+          # 백업 디렉터리가 없으면 생성
           if (!(Test-Path -Path $currentMonthDir)) {
             New-Item -ItemType Directory -Path $currentMonthDir -Force
           }
 
+          # 배포 디렉터리 압축
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
-          Write-Host "✅ Deploy backup created at: $backupFile"
 
-      # 3. 최신 소스 코드 가져오기 (Organization Secrets 활용)
+          Write-Host "✅ Deploy files backup created at: $backupFile"
+
+      ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
         shell: pwsh
         run: |
-          $repoUrl = 'https://:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git'  # GitHub 리포지토리 URL (인증 포함)
+          $repoUrl = "https://${{ secrets.GITHUB_ACTOR }}:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git"  # GitHub 리포지토리 URL
           $branch = 'main'
           $sourceDir = 'D:\actions_work\netcore\source\backend'
 
@@ -67,9 +77,10 @@ jobs:
           git remote add origin $repoUrl
           git fetch origin $branch --force
           git reset --hard origin/$branch
+
           Write-Host "✅ Source code checked out to: $sourceDir"
 
-      # 4. Java 설정 확인하기
+      ### 4. Java 환경 확인
       - name: Verify Java Environment
         shell: pwsh
         run: |
@@ -77,14 +88,14 @@ jobs:
           java -version
           Write-Host "✅ Java environment verified."
 
-      # 5. Backend 빌드
+      ### 5. Backend 빌드
       - name: Build Backend
         shell: pwsh
         run: |
           cd D:/actions_work/netcore/source/backend
           gradle clean build
 
-      # 6. JAR 파일 복사 및 배포
+      ### 6. 최신 JAR 복사 및 배포
       - name: Deploy JAR
         shell: pwsh
         run: |
@@ -92,30 +103,33 @@ jobs:
           $deployDir = 'D:\actions_work\netcore\deploy\backend'
           $jarFile = Join-Path -Path $sourceDir -ChildPath "build\libs\netcore.jar"
 
+          # 배포 디렉터리 없으면 생성
           if (!(Test-Path -Path $deployDir)) {
             New-Item -ItemType Directory -Path $deployDir -Force
           }
 
-          # 기존 배포된 JAR 파일 삭제
+          # 기존 배포 JAR 삭제
           Remove-Item -Path "$deployDir\netcore.jar" -Force -ErrorAction SilentlyContinue
 
-          # 새 JAR 배포
+          # 새 JAR 복사
           Copy-Item -Path $jarFile -Destination "$deployDir\netcore.jar" -Force
+
           Write-Host "✅ JAR deployed to: $deployDir\netcore.jar"
 
-      # 7. 배포된 JAR 파일 실행 (Java 애플리케이션 재시작)
+      ### 7. 배포된 JAR 실행 (애플리케이션 재시작)
       - name: Restart Backend Service
         shell: pwsh
         run: |
           $jarFile = "D:\actions_work\netcore\deploy\backend\netcore.jar"
 
-          # 기존 JAR 프로세스 종료
+          # 기존 Java 프로세스 종료
           $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
           if ($process) {
-            $process | Stop-Process -Force
-            Write-Host "✅ Stopped previous Java process."
+            Stop-Process -Id $process.Id -Force
+            Write-Host "✅ Stopped existing java process: $process.Id"
           }
+          
+          # 배포된 JAR 실행
+          Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -WorkingDirectory "D:\actions_work\netcore\deploy\backend"
 
-          # 새로운 JAR 파일 실행
-          Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -NoNewWindow -PassThru
-          Write-Host "✅ Restarted Java process for JAR: $jarFile"
+          Write-Host "✅ Backend service restarted with: $jarFile"
