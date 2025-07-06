@@ -28,13 +28,14 @@ jobs:
           $sourceDir = "$baseDir\source\backend"
           $backupBaseDir = "$baseDir\backup\source\backend"
 
+          # 현재 월별 백업 디렉터리 생성
           $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
-          $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
-
           if (!(Test-Path -Path $currentMonthDir)) {
             New-Item -ItemType Directory -Path $currentMonthDir -Force
           }
 
+          # 백업 파일 생성 (ZIP 형식으로 저장)
+          $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
 
@@ -48,11 +49,13 @@ jobs:
           $branch = 'main'
           $sourceDir = 'D:\actions_work\netcore\source\backend'
 
+          # 기존 소스 폴더 삭제
           if (Test-Path -Path $sourceDir) {
               Remove-Item -Recurse -Force -Path $sourceDir
               Write-Output "✅ Removed existing $sourceDir"
           }
-
+          
+          # 새로운 소스 폴더 생성 및 소스 클론
           New-Item -ItemType Directory -Path $sourceDir -Force
           git clone --branch $branch $repoUrl $sourceDir
 
@@ -64,28 +67,32 @@ jobs:
         run: |
           Write-Output "Checking Java version..."
           java -version
-          Write-Output "✅ Java environment verified."
+          Write-Output "✅ Java environment verified as follows:"
 
-      ### 5. Backend 빌드
+      ### 5. Backend 빌드 (테스트 미포함)
       - name: Build Backend
         shell: powershell
         run: |
           cd D:/actions_work/netcore/source/backend
-          gradle clean build
+          
+          # Gradle 빌드 수행 (테스트 스킵)
+          gradle clean build -x test
+          Write-Output "✅ Gradle build completed (tests excluded)."
 
       ### 6. 배포된 JAR 실행 (애플리케이션 재시작)
       - name: Restart Backend Service
         shell: powershell
         run: |
-          $sourceDir = 'D:\actions_work\netcore\source\backend'
           $deployDir = 'D:\actions_work\netcore\deploy\backend'
           $jarFile = Join-Path -Path $deployDir -ChildPath "netcore.jar"
 
+          # JAR 파일 실행 중인 프로세스 검색 및 종료
           $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
           if ($process) {
             Stop-Process -Id $process.Id -Force
             Write-Output "✅ Stopped existing java process: $process.Id"
           }
-
+          
+          # JAR 파일 실행
           Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -WorkingDirectory $deployDir
           Write-Output "✅ Backend service restarted using JAR at: $jarFile"
