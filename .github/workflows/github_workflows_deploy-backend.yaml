@@ -50,11 +50,11 @@ jobs:
           Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
           Write-Host "✅ Deploy backup created at: $backupFile"
 
-      # 3. 최신 소스 코드 가져오기 (Git 명령어 사용)
+      # 3. 최신 소스 코드 가져오기 (Organization Secrets 활용)
       - name: Checkout Source Code
         shell: pwsh
         run: |
-          $repoUrl = 'https://:${{ secrets.GITHUB_TOKEN }}@github.com//.git'  # GitHub 리포지토리 URL (인증 포함)
+          $repoUrl = 'https://:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git'  # GitHub 리포지토리 URL (인증 포함)
           $branch = 'main'
           $sourceDir = 'D:\actions_work\netcore\source\backend'
 
@@ -113,9 +113,9 @@ jobs:
           $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
           if ($process) {
             $process | Stop-Process -Force
-            Write-Host "✅ Previous Java process stopped."
+            Write-Host "✅ Stopped previous Java process."
           }
 
-          # 새 JAR 실행
+          # 새로운 JAR 파일 실행
           Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -NoNewWindow -PassThru
-          Write-Host "✅ Backend service restarted with $jarFile"
+          Write-Host "✅ Restarted Java process for JAR: $jarFile"
