@@ -16,7 +16,7 @@ jobs:
     steps:
       ### 1. 현재 소스 코드 백업
       - name: Backup current source
-        shell: pwsh
+        shell: powershell
         run: |
           $baseDir = 'D:\actions_work\netcore'
           $sourceDir = "$baseDir\source\backend"
@@ -35,11 +35,11 @@ jobs:
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
 
-          Write-Host "✅ Source backup created at: $backupFile"
+          Write-Output "✅ Source backup created at: $backupFile"
 
       ### 2. 현재 배포 파일 백업
       - name: Backup current deploy files
-        shell: pwsh
+        shell: powershell
         run: |
           $baseDir = 'D:\actions_work\netcore'
           $deployDir = "$baseDir\deploy\backend"
@@ -58,13 +58,13 @@ jobs:
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$deployDir\*" -DestinationPath $backupFile -Force
 
-          Write-Host "✅ Deploy files backup created at: $backupFile"
+          Write-Output "✅ Deploy backup created at: $backupFile"
 
       ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
-        shell: pwsh
+        shell: powershell
         run: |
-          $repoUrl = "https://${{ secrets.GITHUB_ACTOR }}:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git"  # GitHub 리포지토리 URL
+          $repoUrl = "https://${{ secrets.GITHUB_ACTOR }}:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git"
           $branch = 'main'
           $sourceDir = 'D:\actions_work\netcore\source\backend'
 
@@ -78,26 +78,26 @@ jobs:
           git fetch origin $branch --force
           git reset --hard origin/$branch
 
-          Write-Host "✅ Source code checked out to: $sourceDir"
+          Write-Output "✅ Source code checked out to: $sourceDir"
 
       ### 4. Java 환경 확인
       - name: Verify Java Environment
-        shell: pwsh
+        shell: powershell
         run: |
-          Write-Host "Checking Java version..."
+          Write-Output "Checking Java version..."
           java -version
-          Write-Host "✅ Java environment verified."
+          Write-Output "✅ Java environment verified."
 
       ### 5. Backend 빌드
       - name: Build Backend
-        shell: pwsh
+        shell: powershell
         run: |
           cd D:/actions_work/netcore/source/backend
           gradle clean build
 
       ### 6. 최신 JAR 복사 및 배포
       - name: Deploy JAR
-        shell: pwsh
+        shell: powershell
         run: |
           $sourceDir = 'D:\actions_work\netcore\source\backend'
           $deployDir = 'D:\actions_work\netcore\deploy\backend'
@@ -114,11 +114,11 @@ jobs:
           # 새 JAR 복사
           Copy-Item -Path $jarFile -Destination "$deployDir\netcore.jar" -Force
 
-          Write-Host "✅ JAR deployed to: $deployDir\netcore.jar"
+          Write-Output "✅ JAR deployed to: $deployDir\netcore.jar"
 
       ### 7. 배포된 JAR 실행 (애플리케이션 재시작)
       - name: Restart Backend Service
-        shell: pwsh
+        shell: powershell
         run: |
           $jarFile = "D:\actions_work\netcore\deploy\backend\netcore.jar"
 
@@ -126,10 +126,10 @@ jobs:
           $process = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $jarFile }
           if ($process) {
             Stop-Process -Id $process.Id -Force
-            Write-Host "✅ Stopped existing java process: $process.Id"
+            Write-Output "✅ Stopped existing java process: $process.Id"
           }
           
           # 배포된 JAR 실행
           Start-Process -FilePath "java" -ArgumentList "-jar `"$jarFile`"" -WorkingDirectory "D:\actions_work\netcore\deploy\backend"
 
-          Write-Host "✅ Backend service restarted with: $jarFile"
+          Write-Output "✅ Backend service restarted with: $jarFile"
