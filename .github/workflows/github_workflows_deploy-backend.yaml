@@ -18,7 +18,7 @@ jobs:
       - name: Add Safe Directory
         shell: powershell
         run: |
-          $safeDir = 'D:\actions_work\netcore\source\backend'
+          $safeDir = 'D:/actions_work/netcore/source/backend'
           git config --global --add safe.directory $safeDir
           Write-Output "✅ Git safe directory added for: $safeDir"
 
@@ -76,7 +76,7 @@ jobs:
               Write-Output "✅ .env file copied to: $envDestinationPath"
           } else {
               Write-Output "❌ .env source file not found: $envSourcePath"
-              exit 1
+              exit 1  # 실패 처리
           }
 
       ### 5. Java 환경 확인
@@ -84,9 +84,7 @@ jobs:
         shell: powershell
         run: |
           Write-Output "🔍 Checking Java environment..."
-          java -version 2>&1 | ForEach-Object {
-              Write-Output $_
-          }
+          java -version
           If ($?) {
               Write-Output "✅ Java installation verified."
           } Else {
@@ -102,17 +100,12 @@ jobs:
           cd $buildDir
           
           # Gradle 빌드 수행 (테스트 제외)
-          if (!(Get-Command gradle -ErrorAction SilentlyContinue)) {
-              Write-Error "❌ Gradle is not installed or the PATH environment variable is not configured."
-              exit 1
-          }
-
-          gradle clean build -x test > build.log 2>&1
-          if ($LASTEXITCODE -ne 0) {
-              Write-Output "❌ Backend build failed. See build.log for details."
-              exit 1
-          } else {
+          try {
+              gradle clean build -x test
               Write-Output "✅ Backend build completed successfully (tests excluded)."
+          } catch {
+              Write-Error "❌ Backend build failed. Please check the build logs."
+              exit 1
           }
 
       ### 7. 빌드 결과물 배포 디렉터리로 복사
@@ -124,10 +117,7 @@ jobs:
           $deployDir = "$baseDir\deploy\backend"
 
           # 실행 가능한 JAR 파일 검색 (plain 제외)
-          $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' `
-                      | Where-Object { $_.Name -notlike '*-plain.jar' } `
-                      | Sort-Object LastWriteTime -Descending `
-                      | Select-Object -First 1).FullName
+          $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' | Where-Object { $_.Name -notlike '*-plain.jar' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
 
           if (-not $jarFile) {
               Write-Error "❌ No executable JAR file found in: $sourceDir"
@@ -141,9 +131,9 @@ jobs:
 
           # JAR 파일 복사
           Copy-Item -Path $jarFile -Destination $deployDir -Force
-          Write-Output "✅ JAR file copied to: $deployDir"
+          Write-Output "✅ Executable JAR copied to: $deployDir"
 
-      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행 
+      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행
       - name: Restart Backend Service
         shell: powershell
         run: |
