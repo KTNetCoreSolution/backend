@@ -98,27 +98,53 @@ jobs:
         run: |
           $envFilePath = "D:\actions_work\netcore\source\backend\.env"
 
-          # .env 파일이 존재하는지 확인
+          # .env 파일 경로
+          $envFilePath = "D:\actions_work\netcore\source\backend\.env"
+          
+          # .env 파일 존재 여부 확인
           if (!(Test-Path -Path $envFilePath)) {
-              Write-Error "❌ .env file not found at: $envFilePath"
+              Write-Error "❌ .env 파일이 존재하지 않습니다: $envFilePath"
               exit 1
           }
-
+          
           Write-Output "📂 Loading environment variables from: $envFilePath"
-
-          # .env 파일 라인별로 읽기 및 환경 변수 등록
+          
+          # .env 파일 읽기 및 처리
           try {
-              Get-Content $envFilePath | ForEach-Object {
-                  if ($_ -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
-                      $key = $matches['key']
-                      $value = $matches['value']
-                      [System.Environment]::SetEnvironmentVariable($key, $value)
-                      Write-Output "✅ Loaded environment variable: $key"
+              $lines = Get-Content -Path $envFilePath
+              Write-Output "📋 .env 파일 내용 (${lines.Count} 라인):"
+              Write-Output $lines
+          
+              # 각 라인 순회 및 환경 변수 설정
+              $lineNumber = 0  # 라인 번호 추적
+              foreach ($line in $lines) {
+                  $lineNumber++
+                  try {
+                      # 빈 줄 또는 주석 무시
+                      if ($line -match "^\s*$" -or $line -match "^\s*#") {
+                          continue
+                      }
+          
+                      # 정규식으로 KEY=VALUE 매칭 시도
+                      if ($line -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
+                          $key = $matches['key']
+                          $value = $matches['value'].Trim(' "')
+                          [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
+                          Write-Output "✅ Line $lineNumber: Loaded environment variable: $key = $value"
+                      } else {
+                          Write-Error "⚠️ Line $lineNumber: Invalid format in .env file: $line"
+                      }
+                  } catch {
+                      # 특정 라인에서 발생하는 에러 처리
+                      Write-Error "❌ Line $lineNumber: Failed to process line: $line"
+                      Write-Error "Exception: $($_.Exception.Message)"
                   }
               }
           } catch {
-              Write-Error "❌ Failed to load environment variables from the .env file."
-              Write-Error $_.Exception.Message
+              # 파일 전체 읽기 실패에 대한 에러 처리
+              Write-Error "❌ .env 파일 로드 실패: $envFilePath"
+              Write-Error "Exception: $($_.Exception.Message)"
+              Write-Error "StackTrace: $($_.Exception.StackTrace)"
               exit 1
           }
 
