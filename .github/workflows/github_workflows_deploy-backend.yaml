@@ -96,10 +96,10 @@ jobs:
       - name: Load .env File
         shell: powershell
         run: |
-          # .env 파일 경로 설정 (GitHub Actions RUNNER WORKSPACE 기준)
+          # `.env` 파일 경로 설정 (GitHub Actions 작업 디렉토리 기준)
           $envFilePath = "$env:GITHUB_WORKSPACE\source\backend\.env"
       
-          # .env 파일 존재 여부 확인
+          # `.env` 파일 존재 여부 확인
           if (!(Test-Path -Path $envFilePath)) {
               Write-Error "❌ .env 파일이 존재하지 않습니다: $envFilePath"
               exit 1
@@ -108,28 +108,18 @@ jobs:
           Write-Output "📂 Loading environment variables from: $envFilePath"
           
           try {
+              # `.env` 파일 내용을 읽어 환경 변수 설정
               $lines = Get-Content -Path $envFilePath
-              $lineNumber = 0
               foreach ($line in $lines) {
-                  $lineNumber++
-                  if ($line -match "^\s*$" -or $line -match "^\s*#") {
-                      # 빈 줄 또는 주석(#) 건너뛰기
-                      continue
-                  }
-                
-                  # key=value 형식 검증 및 환경 변수 설정
                   if ($line -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
                       $key = $matches['key']
                       $value = $matches['value'].Trim(' "')
                       [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
-                      Write-Output "✅ Line ${lineNumber}: Loaded environment variable: $key = $value"
-                  } else {
-                      Write-Warning "⚠️ Line ${lineNumber}: Invalid format in .env file: $line"
+                      Write-Output "✅ Loaded environment variable: $key = $value"
                   }
               }
           } catch {
-              Write-Error "❌ .env 파일 로드 실패: $envFilePath"
-              Write-Error "Exception: $($_.Exception.Message)"
+              Write-Error "❌ .env 파일 로드 중 오류 발생: $($_.Exception.Message)"
               exit 1
           }
       
@@ -139,13 +129,13 @@ jobs:
         run: |
           $buildDir = "$env:GITHUB_WORKSPACE\source\backend"
           cd $buildDir
-          
-          # Gradle 빌드 수행 (테스트 제외)
+      
           try {
+              # Gradle 빌드 수행
               gradle clean build -x test
-              Write-Output "✅ Backend build completed successfully (tests excluded)."
+              Write-Output "✅ Backend build completed successfully."
           } catch {
-              Write-Error "❌ Backend build failed. Please check the build logs."
+              Write-Error "❌ Backend build failed."
               exit 1
           }
 
