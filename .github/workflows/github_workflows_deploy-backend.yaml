@@ -43,7 +43,6 @@ jobs:
 
           Write-Output "✅ Source backup created at: $backupFile"
 
-
       ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
         shell: powershell
@@ -76,41 +75,20 @@ jobs:
               Copy-Item -Path $envSourcePath -Destination $envDestinationPath -Force
               Write-Output "✅ .env file copied to: $envDestinationPath"
           } else {
-              Write-Error "❌ .env source file not found: $envSourcePath"
-              exit 1
+              Write-Output "❌ .env source file not found: $envSourcePath"
+              exit 1  # 실패 처리
           }
 
-      ### 5. Java 환경 확인
+       ### 5. Java 환경 확인
       - name: Verify Java Environment
         shell: powershell
         run: |
-          # Java PATH 설정
-          $javaHome = 'D:\tool\jdk-21.0.7.6'
-          $javaExe = "$javaHome\bin\java.exe"
-          $env:PATH = "$javaHome\bin;" + $env:PATH
-          $env:JAVA_HOME = $javaHome
-
-          # Java 실행 파일 존재 여부 확인
-          Write-Output "🔍 Checking Java executable at: $javaExe"
-          if (-not (Test-Path -Path $javaExe)) {
-              Write-Error "❌ Java executable not found at: $javaExe"
-              exit 1
-          }
-
-          # Java 설치 확인
           Write-Output "🔍 Checking Java environment..."
-          try {
-              # java -version의 출력을 캡처
-              $javaOutput = & $javaExe -version 2>&1 | Out-String
-              if ($LASTEXITCODE -eq 0) {
-                  Write-Output "✅ Java is installed: $javaOutput"
-              } else {
-                  Write-Error "❌ Java execution failed with exit code $LASTEXITCODE. Output: $javaOutput"
-                  exit 1
-              }
-          } catch {
-              Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
-              Write-Output "🔍 Java output (if any): $javaOutput"
+          java -version
+          If ($?) {
+              Write-Output "✅ Java installation verified."
+          } Else {
+              Write-Error "❌ Java is not installed or incorrectly configured. Please check the environment."
               exit 1
           }
 
@@ -157,18 +135,14 @@ jobs:
         shell: powershell
         run: |
           $buildDir = "D:\actions_work\netcore\source\backend"
-          $javaHome = 'D:\tool\jdk-21.0.7.6'
-          $env:PATH = "$javaHome\bin;" + $env:PATH
-          $env:JAVA_HOME = $javaHome
-
           cd $buildDir
       
           try {
               # Gradle 빌드 수행
-              & ".\gradlew.bat" clean build -x test
+              gradle clean build -x test
               Write-Output "✅ Backend build completed successfully."
           } catch {
-              Write-Error "❌ Backend build failed: $($_.Exception.Message)"
+              Write-Error "❌ Backend build failed."
               exit 1
           }
 
