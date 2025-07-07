@@ -79,16 +79,22 @@ jobs:
               exit 1  # 실패 처리
           }
 
-       ### 5. Java 환경 확인
+      ### 5. Java 환경 확인
       - name: Verify Java Environment
         shell: powershell
         run: |
+          # Java PATH 설정
+          $javaHome = 'D:\tool\jdk-21.0.7.6'
+          $env:PATH = "$javaHome\bin;" + $env:PATH
+          $env:JAVA_HOME = $javaHome
+
+          # Java 설치 확인
           Write-Output "🔍 Checking Java environment..."
-          java -version
-          If ($?) {
-              Write-Output "✅ Java installation verified."
-          } Else {
-              Write-Error "❌ Java is not installed or incorrectly configured. Please check the environment."
+          try {
+              $javaVersion = & "$javaHome\bin\java.exe" -version 2>&1
+              Write-Output "✅ Java is installed: $javaVersion"
+          } catch {
+              Write-Error "❌ Java runtime not found at $javaHome\bin\java.exe or not in PATH."
               exit 1
           }
 
@@ -139,10 +145,10 @@ jobs:
       
           try {
               # Gradle 빌드 수행
-              gradle clean build -x test
+              & ".\gradlew.bat" clean build -x test
               Write-Output "✅ Backend build completed successfully."
           } catch {
-              Write-Error "❌ Backend build failed."
+              Write-Error "❌ Backend build failed: $($_.Exception.Message)"
               exit 1
           }
 
@@ -176,13 +182,18 @@ jobs:
         shell: powershell
         run: |
           $deployDir = Join-Path $env:GITHUB_WORKSPACE 'deploy\backend'
-      
+          $javaHome = 'D:\tool\jdk-21.0.7.6'
+
+          # Java PATH 설정
+          $env:PATH = "$javaHome\bin;" + $env:PATH
+          $env:JAVA_HOME = $javaHome
+
           # Java 버전 확인
           try {
-              $javaVersion = & java -version 2>&1
+              $javaVersion = & "$javaHome\bin\java.exe" -version 2>&1
               Write-Output "✅ Java is installed: $javaVersion"
           } catch {
-              Write-Error "❌ Java runtime is not installed or not in PATH."
+              Write-Error "❌ Java runtime not found at $javaHome\bin\java.exe or not in PATH."
               exit 1
           }
       
@@ -220,7 +231,7 @@ jobs:
               Write-Output "ℹ️ No matching Java process found to stop."
           }
       
-          # 환경 변수 확인 (선택적)
+          # 환경 변수 확인
           Write-Output "🔍 Checking critical environment variables:"
           $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY') # 필요한 변수 목록
           foreach ($var in $envVars) {
@@ -235,7 +246,7 @@ jobs:
           # JAR 파일 실행
           Write-Output "🚀 Starting backend service with JAR: $jarFile"
           try {
-              Start-Process -FilePath "java.exe" -ArgumentList "-jar `"$jarPath`"" `
+              Start-Process -FilePath "$javaHome\bin\java.exe" -ArgumentList "-jar `"$jarPath`"" `
                             -NoNewWindow `
                             -RedirectStandardOutput "$deployDir\output.log" `
                             -RedirectStandardError "$deployDir\error.log" `
@@ -259,7 +270,7 @@ jobs:
               Write-Error "❌ Failed to start JAR: $($_.Exception.Message)"
               if (Test-Path -Path "$deployDir\error.log") {
                   Write-Output "📜 Error Log:"
-                  Get-Content -Path "$deployDir\error.log" - Ascending
+                  Get-Content -Path "$deployDir\error.log" -Tail 20
                   exit 1
               }
           }
