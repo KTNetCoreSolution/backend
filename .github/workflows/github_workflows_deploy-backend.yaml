@@ -40,6 +40,7 @@ jobs:
           $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
+  -ErrorAction SilentlyContinue # 백업 실패 시 무시
 
           Write-Output "✅ Source backup created at: $backupFile"
 
@@ -75,8 +76,8 @@ jobs:
               Copy-Item -Path $envSourcePath -Destination $envDestinationPath -Force
               Write-Output "✅ .env file copied to: $envDestinationPath"
           } else {
-              Write-Output "❌ .env source file not found: $envSourcePath"
-              exit 1  # 실패 처리
+              Write-Error "❌ .env source file not found: $envSourcePath"
+              exit 1
           }
 
       ### 5. Java 환경 확인
@@ -85,16 +86,24 @@ jobs:
         run: |
           # Java PATH 설정
           $javaHome = 'D:\tool\jdk-21.0.7.6'
+          $javaExe = "$javaHome\bin\java.exe"
           $env:PATH = "$javaHome\bin;" + $env:PATH
           $env:JAVA_HOME = $javaHome
+
+          # Java 실행 파일 존재 여부 확인
+          Write-Output "🔍 Checking Java executable at: $javaExe"
+          if (-not (Test-Path -Path $javaExe)) {
+              Write-Error "❌ Java executable not found at: $javaExe"
+              exit 1
+          }
 
           # Java 설치 확인
           Write-Output "🔍 Checking Java environment..."
           try {
-              $javaVersion = & "$javaHome\bin\java.exe" -version 2>&1
+              $javaVersion = & $javaExe -version 2>&1
               Write-Output "✅ Java is installed: $javaVersion"
           } catch {
-              Write-Error "❌ Java runtime not found at $javaHome\bin\java.exe or not in PATH."
+              Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
               exit 1
           }
 
@@ -141,6 +150,10 @@ jobs:
         shell: powershell
         run: |
           $buildDir = "D:\actions_work\netcore\source\backend"
+          $javaHome = 'D:\tool\jdk-21.0.7.6'
+          $env:PATH = "$javaHome\bin;" + $env:PATH
+          $env:JAVA_HOME = $javaHome
+
           cd $buildDir
       
           try {
@@ -183,17 +196,25 @@ jobs:
         run: |
           $deployDir = Join-Path $env:GITHUB_WORKSPACE 'deploy\backend'
           $javaHome = 'D:\tool\jdk-21.0.7.6'
+          $javaExe = "$javaHome\bin\java.exe"
 
           # Java PATH 설정
           $env:PATH = "$javaHome\bin;" + $env:PATH
           $env:JAVA_HOME = $javaHome
 
+          # Java 실행 파일 존재 여부 확인
+          Write-Output "🔍 Checking Java executable at: $javaExe"
+          if (-not (Test-Path -Path $javaExe)) {
+              Write-Error "❌ Java executable not found at: $javaExe"
+              exit 1
+          }
+
           # Java 버전 확인
           try {
-              $javaVersion = & "$javaHome\bin\java.exe" -version 2>&1
+              $javaVersion = & $javaExe -version 2>&1
               Write-Output "✅ Java is installed: $javaVersion"
           } catch {
-              Write-Error "❌ Java runtime not found at $javaHome\bin\java.exe or not in PATH."
+              Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
               exit 1
           }
       
@@ -226,14 +247,14 @@ jobs:
           if ($process) {
               Write-Output "🛑 Stopping Java process with PID $($process.ProcessId)..."
               Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 3 # 프로세스 종료 대기
+              Start-Sleep -Seconds 3
           } else {
               Write-Output "ℹ️ No matching Java process found to stop."
           }
       
           # 환경 변수 확인
           Write-Output "🔍 Checking critical environment variables:"
-          $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY') # 필요한 변수 목록
+          $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY')
           foreach ($var in $envVars) {
               $value = [System.Environment]::GetEnvironmentVariable($var, 'Process')
               if ($value) {
@@ -246,12 +267,12 @@ jobs:
           # JAR 파일 실행
           Write-Output "🚀 Starting backend service with JAR: $jarFile"
           try {
-              Start-Process -FilePath "$javaHome\bin\java.exe" -ArgumentList "-jar `"$jarPath`"" `
+              Start-Process -FilePath $javaExe -ArgumentList "-jar `"$jarPath`"" `
                             -NoNewWindow `
                             -RedirectStandardOutput "$deployDir\output.log" `
                             -RedirectStandardError "$deployDir\error.log" `
                             -ErrorAction Stop
-              Start-Sleep -Seconds 5 # 애플리케이션 시작 대기
+              Start-Sleep -Seconds 5
       
               # 실행된 프로세스 확인
               $newProcess = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
