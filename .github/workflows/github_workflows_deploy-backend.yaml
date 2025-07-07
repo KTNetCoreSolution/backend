@@ -79,7 +79,7 @@ jobs:
               exit 1  # 실패 처리
           }
 
-      ### 5. Java 환경 확인
+       ### 5. Java 환경 확인
       - name: Verify Java Environment
         shell: powershell
         run: |
@@ -92,7 +92,31 @@ jobs:
               exit 1
           }
 
-      ### 6. Backend 빌드 (테스트 미포함)
+      ### 6. .env 파일 로드 및 환경 변수 설정
+      - name: Load .env File
+        shell: powershell
+        run: |
+          $envFilePath = "D:\actions_work\netcore\source\backend\.env"
+
+          # .env 파일이 존재하는지 확인
+          if (!(Test-Path -Path $envFilePath)) {
+              Write-Error "❌ .env file not found at: $envFilePath"
+              exit 1
+          }
+
+          Write-Output "📂 Loading environment variables from: $envFilePath"
+
+          # .env 파일 라인별로 읽기 및 환경 변수 등록
+          Get-Content $envFilePath | ForEach-Object {
+              if ($_ -match '^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$') {
+                  $key = $matches['key']
+                  $value = $matches['value']
+                  [System.Environment]::SetEnvironmentVariable($key, $value)
+                  Write-Output "✅ Loaded environment variable: $key"
+              }
+          }
+
+      ### 7. Backend 빌드 (테스트 미포함)
       - name: Build Backend
         shell: powershell
         run: |
@@ -108,7 +132,7 @@ jobs:
               exit 1
           }
 
-      ### 7. 빌드 결과물 배포 디렉터리로 복사
+      ### 8. 빌드 결과물 배포 디렉터리로 복사
       - name: Deploy Built JAR
         shell: powershell
         run: |
@@ -133,7 +157,7 @@ jobs:
           Copy-Item -Path $jarFile -Destination $deployDir -Force
           Write-Output "✅ Executable JAR copied to: $deployDir"
 
-      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행
+      ### 9. 기존 백엔드 애플리케이션 종료 및 새로 실행
       - name: Restart Backend Service
         shell: powershell
         run: |
