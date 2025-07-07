@@ -111,11 +111,18 @@ jobs:
               # `.env` 파일 내용을 읽어 환경 변수 설정
               $lines = Get-Content -Path $envFilePath
               foreach ($line in $lines) {
-                  if ($line -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
+                  # 빈 줄이나 주석(#으로 시작) 무시
+                  if ($line -match '^\s*$' -or $line -match '^\s*#') {
+                      continue
+                  }
+                  # 정규 표현식: 키=값 형식 파싱 (그룹 이름 사용)
+                  if ($line -match '^(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<value>.*)$') {
                       $key = $matches['key']
-                      $value = $matches['value'].Trim(' "')
+                      $value = $matches['value'].Trim(' "''')
                       [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
                       Write-Output "✅ Loaded environment variable: $key = $value"
+                  } else {
+                      Write-Warning "⚠️ 유효하지 않은 .env 라인 무시: $line"
                   }
               }
           } catch {
