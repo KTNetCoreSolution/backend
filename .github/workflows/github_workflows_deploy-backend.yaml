@@ -40,9 +40,9 @@ jobs:
           $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
           $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
           Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
-  -ErrorAction SilentlyContinue # 백업 실패 시 무시
 
           Write-Output "✅ Source backup created at: $backupFile"
+
 
       ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
