@@ -175,32 +175,103 @@ jobs:
       - name: Restart Backend Service
         shell: powershell
         run: |
-          $deployDir = 'D:\actions_work\netcore\deploy\backend'
-
-          # 배포 디렉토리에서 최신 JAR 파일 검색
+          $deployDir = Join-Path $env:GITHUB_WORKSPACE 'deploy\backend'
+      
+          # Java 버전 확인
+          try {
+              $javaVersion = & java -version 2>&1
+              Write-Output "✅ Java is installed: $javaVersion"
+          } catch {
+              Write-Error "❌ Java runtime is not installed or not in PATH."
+              exit 1
+          }
+      
+          # 배포 디렉토리 확인
+          if (-not (Test-Path -Path $deployDir)) {
+              Write-Error "❌ Deploy directory does not exist: $deployDir"
+              exit 1
+          }
+      
+          # 최신 JAR 파일 검색
           $jarFile = (Get-ChildItem -Path $deployDir -Filter '*.jar' `
                       | Sort-Object LastWriteTime -Descending `
                       | Select-Object -First 1).Name
-
+      
           if (-not $jarFile) {
               Write-Error "❌ No JAR file found in $deployDir."
               exit 1
           }
-
+      
+          $jarPath = Join-Path $deployDir $jarFile
+          if (-not (Test-Path -Path $jarPath)) {
+              Write-Error "❌ JAR file does not exist: $jarPath"
+              exit 1
+          }
+      
           # 기존 실행 중인 애플리케이션 종료
           $process = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
-                     | Where-Object { $_.CommandLine -match $jarFile }
-
+                     | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
+      
           if ($process) {
-              Stop-Process -Id $process.ProcessId -Force
-              Write-Output "✅ Java process with PID $($process.ProcessId) stopped."
+              Write-Output "🛑 Stopping Java process with PID $($process.ProcessId)..."
+              Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 3 # 프로세스 종료 대기
           } else {
-              Write-Output "⚠️ No matching Java process found to stop."
+              Write-Output "ℹ️ No matching Java process found to stop."
           }
-
-          # 최신 JAR 파일 실행
-          Start-Process -FilePath "java.exe" -ArgumentList "-jar `"$deployDir\$jarFile`"" `
-                        -NoNewWindow `
-                        -RedirectStandardOutput "$deployDir\output.log" `
-                        -RedirectStandardError "$deployDir\error.log"
+      
+          # 환경 변수 확인 (선택적)
+          Write-Output "🔍 Checking critical environment variables:"
+          $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY') # 필요한 변수 목록
+          foreach ($var in $envVars) {
+              $value = [System.Environment]::GetEnvironmentVariable($var, 'Process')
+              if ($value) {
+                  Write-Output "$var = $value"
+              } else {
+                  Write-Warning "⚠️ $var is not set!"
+              }
+          }
+      
+          # JAR 파일 실행
+          Write-Output "🚀 Starting backend service with JAR: $jarFile"
+          try {
+              Start-Process -FilePath "java.exe" -ArgumentList "-jar `"$jarPath`"" `
+                            -NoNewWindow `
+                            -RedirectStandardOutput "$deployDir\output.log" `
+                            -RedirectStandardError "$deployDir\error.log" `
+                            -ErrorAction Stop
+              Start-Sleep -Seconds 5 # 애플리케이션 시작 대기
+      
+              # 실행된 프로세스 확인
+              $newProcess = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
+                            | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
+              if ($newProcess) {
+                  Write-Output "✅ Backend service started with PID $($newProcess.ProcessId)."
+              } else {
+                  Write-Error "❌ Failed to start backend service. Checking logs..."
+                  if (Test-Path -Path "$deployDir\error.log") {
+                      Write-Output "📜 Error Log:"
+                      Get-Content -Path "$deployDir\error.log" -Tail 20
+                  }
+                  exit 1
+              }
+          } catch {
+              Write-Error "❌ Failed to start JAR: $($_.Exception.Message)"
+              if (Test-Path -Path "$deployDir\error.log") {
+                  Write-Output "📜 Error Log:"
+                  Get-Content -Path "$deployDir\error.log" - Ascending
+                  exit 1
+              }
+          }
+      
+          # 로그 파일 출력
+          if (Test-Path -Path "$deployDir\output.log") {
+              Write-Output "📜 Application Log:"
+              Get-Content -Path "$deployDir\output.log" -Tail 20
+          }
+          if (Test-Path -Path "$deployDir\error.log") {
+              Write-Output "📜 Error Log:"
+              Get-Content -Path "$deployDir\error.log" -Tail 20
+          }
+      
           Write-Output "✅ Backend service restarted with JAR: $jarFile. Logs are available in $deployDir."
