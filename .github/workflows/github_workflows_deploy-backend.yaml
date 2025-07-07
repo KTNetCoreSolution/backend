@@ -96,15 +96,15 @@ jobs:
       - name: Load .env File
         shell: powershell
         run: |
-          # .env 파일 경로
-          $envFilePath = "D:\actions_work\netcore\source\backend\.env"
-          
+          # .env 파일 경로 설정 (GitHub Actions RUNNER WORKSPACE 기준)
+          $envFilePath = "$env:GITHUB_WORKSPACE\source\backend\.env"
+      
           # .env 파일 존재 여부 확인
           if (!(Test-Path -Path $envFilePath)) {
               Write-Error "❌ .env 파일이 존재하지 않습니다: $envFilePath"
               exit 1
           }
-          
+      
           Write-Output "📂 Loading environment variables from: $envFilePath"
           
           try {
@@ -113,16 +113,18 @@ jobs:
               foreach ($line in $lines) {
                   $lineNumber++
                   if ($line -match "^\s*$" -or $line -match "^\s*#") {
+                      # 빈 줄 또는 주석(#) 건너뛰기
                       continue
                   }
-          
+                
+                  # key=value 형식 검증 및 환경 변수 설정
                   if ($line -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
                       $key = $matches['key']
                       $value = $matches['value'].Trim(' "')
                       [System.Environment]::SetEnvironmentVariable($key, $value, "Process")
                       Write-Output "✅ Line ${lineNumber}: Loaded environment variable: $key = $value"
                   } else {
-                      Write-Error "⚠️ Line ${lineNumber}: Invalid format in .env file: $line"
+                      Write-Warning "⚠️ Line ${lineNumber}: Invalid format in .env file: $line"
                   }
               }
           } catch {
@@ -130,12 +132,12 @@ jobs:
               Write-Error "Exception: $($_.Exception.Message)"
               exit 1
           }
-
+      
       ### 7. Backend 빌드 (테스트 미포함)
       - name: Build Backend
         shell: powershell
         run: |
-          $buildDir = "D:\actions_work\netcore\source\backend"
+          $buildDir = "$env:GITHUB_WORKSPACE\source\backend"
           cd $buildDir
           
           # Gradle 빌드 수행 (테스트 제외)
