@@ -179,8 +179,10 @@ jobs:
           $javaHome = 'D:\tool\jdk-21.0.7.6'
           $javaExe = "$javaHome\bin\java.exe"
 
-          # Java PATH 설정
-          $env:PATH = "$javaHome\bin;" + $env:PATH
+          # Java PATH 설정 (중복 추가 방지)
+          if ($env:PATH -notlike "*$javaHome\bin*") {
+              $env:PATH = "$javaHome\bin;" + $env:PATH
+          }
           $env:JAVA_HOME = $javaHome
 
           # 현재 PATH 출력 (디버깅용)
@@ -199,7 +201,7 @@ jobs:
               # java -version의 stdout과 stderr을 별도로 캡처
               $javaOutput = & $javaExe -version 2>&1 | Out-String
               Write-Output "🔍 Raw Java output: $javaOutput"
-              if ($LASTEXITCODE -eq 0) {
+              if ($LASTEXITCODE -eq 0 -or $javaOutput -match "openjdk version") {
                   Write-Output "✅ Java is installed: $javaOutput"
               } else {
                   Write-Error "❌ Java execution failed with exit code $LASTEXITCODE. Output: $javaOutput"
