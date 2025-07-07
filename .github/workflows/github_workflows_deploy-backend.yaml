@@ -62,8 +62,24 @@ jobs:
           git clone --branch $branch $repoUrl $sourceDir
 
           Write-Output "✅ Source code cloned to: $sourceDir"
+          
+      ### 4. .env 파일 복사
+      - name: Copy .env file
+        shell: powershell
+        run: |
+          $envSourcePath = 'D:\actions_work\netcore\env\backend.env'
+          $envDestinationPath = 'D:\actions_work\netcore\source\backend\.env'
 
-      ### 4. Java 환경 확인
+          # .env 파일이 존재하는지 확인하고 복사
+          if (Test-Path -Path $envSourcePath) {
+              Copy-Item -Path $envSourcePath -Destination $envDestinationPath -Force
+              Write-Output "✅ .env file copied to: $envDestinationPath"
+          } else {
+              Write-Output "❌ .env source file not found: $envSourcePath"
+              exit 1  # 실패 처리
+          }
+
+      ### 5. Java 환경 확인
       - name: Verify Java Environment
         shell: powershell
         run: |
@@ -76,7 +92,7 @@ jobs:
               exit 1
           }
 
-      ### 5. Backend 빌드 (테스트 미포함)
+      ### 6. Backend 빌드 (테스트 미포함)
       - name: Build Backend
         shell: powershell
         run: |
@@ -92,7 +108,7 @@ jobs:
               exit 1
           }
 
-      ### 6. 빌드 결과물 배포 디렉터리로 복사
+      ### 7. 빌드 결과물 배포 디렉터리로 복사
       - name: Deploy Built JAR
         shell: powershell
         run: |
@@ -117,7 +133,7 @@ jobs:
           Copy-Item -Path $jarFile -Destination $deployDir -Force
           Write-Output "✅ Executable JAR copied to: $deployDir"
 
-      ### 7. 기존 백엔드 애플리케이션 종료 및 새로 실행
+      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행
       - name: Restart Backend Service
         shell: powershell
         run: |
