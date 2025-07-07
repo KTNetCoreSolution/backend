@@ -183,6 +183,9 @@ jobs:
           $env:PATH = "$javaHome\bin;" + $env:PATH
           $env:JAVA_HOME = $javaHome
 
+          # 현재 PATH 출력 (디버깅용)
+          Write-Output "🔍 Current PATH: $env:PATH"
+
           # Java 실행 파일 존재 여부 확인
           Write-Output "🔍 Checking Java executable at: $javaExe"
           if (-not (Test-Path -Path $javaExe)) {
@@ -191,8 +194,11 @@ jobs:
           }
 
           # Java 버전 확인
+          Write-Output "🔍 Checking Java environment..."
           try {
+              # java -version의 stdout과 stderr을 별도로 캡처
               $javaOutput = & $javaExe -version 2>&1 | Out-String
+              Write-Output "🔍 Raw Java output: $javaOutput"
               if ($LASTEXITCODE -eq 0) {
                   Write-Output "✅ Java is installed: $javaOutput"
               } else {
@@ -204,33 +210,33 @@ jobs:
               Write-Output "🔍 Java output (if any): $javaOutput"
               exit 1
           }
-      
+
           # 배포 디렉토리 확인
           if (-not (Test-Path -Path $deployDir)) {
               Write-Error "❌ Deploy directory does not exist: $deployDir"
               exit 1
           }
-      
+
           # 최신 JAR 파일 검색
           $jarFile = (Get-ChildItem -Path $deployDir -Filter '*.jar' `
                       | Sort-Object LastWriteTime -Descending `
                       | Select-Object -First 1).Name
-      
+
           if (-not $jarFile) {
               Write-Error "❌ No JAR file found in $deployDir."
               exit 1
           }
-      
+
           $jarPath = Join-Path $deployDir $jarFile
           if (-not (Test-Path -Path $jarPath)) {
               Write-Error "❌ JAR file does not exist: $jarPath"
               exit 1
           }
-      
+
           # 기존 실행 중인 애플리케이션 종료
           $process = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
                      | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
-      
+
           if ($process) {
               Write-Output "🛑 Stopping Java process with PID $($process.ProcessId)..."
               Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
@@ -238,7 +244,7 @@ jobs:
           } else {
               Write-Output "ℹ️ No matching Java process found to stop."
           }
-      
+
           # 환경 변수 확인
           Write-Output "🔍 Checking critical environment variables:"
           $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY')
@@ -250,7 +256,7 @@ jobs:
                   Write-Warning "⚠️ $var is not set!"
               }
           }
-      
+
           # JAR 파일 실행
           Write-Output "🚀 Starting backend service with JAR: $jarFile"
           try {
@@ -260,7 +266,7 @@ jobs:
                             -RedirectStandardError "$deployDir\error.log" `
                             -ErrorAction Stop
               Start-Sleep -Seconds 5
-      
+
               # 실행된 프로세스 확인
               $newProcess = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
                             | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
@@ -279,10 +285,10 @@ jobs:
               if (Test-Path -Path "$deployDir\error.log") {
                   Write-Output "📜 Error Log:"
                   Get-Content -Path "$deployDir\error.log" -Tail 20
-                  exit 1
               }
+              exit 1
           }
-      
+
           # 로그 파일 출력
           if (Test-Path -Path "$deployDir\output.log") {
               Write-Output "📜 Application Log:"
@@ -292,5 +298,5 @@ jobs:
               Write-Output "📜 Error Log:"
               Get-Content -Path "$deployDir\error.log" -Tail 20
           }
-      
+
           Write-Output "✅ Backend service restarted with JAR: $jarFile. Logs are available in $deployDir."
