@@ -18,7 +18,7 @@ jobs:
       - name: Add Safe Directory
         shell: powershell
         run: |
-          $safeDir = 'D:/actions_work/netcore/source/backend'
+          $safeDir = 'D:\actions_work\netcore\source\backend'
           git config --global --add safe.directory $safeDir
           Write-Output "✅ Git safe directory added for: $safeDir"
 
@@ -76,7 +76,7 @@ jobs:
               Write-Output "✅ .env file copied to: $envDestinationPath"
           } else {
               Write-Output "❌ .env source file not found: $envSourcePath"
-              exit 1  # 실패 처리
+              exit 1
           }
 
       ### 5. Java 환경 확인
@@ -84,7 +84,9 @@ jobs:
         shell: powershell
         run: |
           Write-Output "🔍 Checking Java environment..."
-          java -version
+          java -version 2>&1 | ForEach-Object {
+              Write-Output $_
+          }
           If ($?) {
               Write-Output "✅ Java installation verified."
           } Else {
@@ -100,12 +102,17 @@ jobs:
           cd $buildDir
           
           # Gradle 빌드 수행 (테스트 제외)
-          try {
-              gradle clean build -x test
-              Write-Output "✅ Backend build completed successfully (tests excluded)."
-          } catch {
-              Write-Error "❌ Backend build failed. Please check the build logs."
+          if (!(Get-Command gradle -ErrorAction SilentlyContinue)) {
+              Write-Error "❌ Gradle is not installed or the PATH environment variable is not configured."
               exit 1
+          }
+
+          gradle clean build -x test > build.log 2>&1
+          if ($LASTEXITCODE -ne 0) {
+              Write-Output "❌ Backend build failed. See build.log for details."
+              exit 1
+          } else {
+              Write-Output "✅ Backend build completed successfully (tests excluded)."
           }
 
       ### 7. 빌드 결과물 배포 디렉터리로 복사
@@ -117,7 +124,10 @@ jobs:
           $deployDir = "$baseDir\deploy\backend"
 
           # 실행 가능한 JAR 파일 검색 (plain 제외)
-          $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' | Where-Object { $_.Name -notlike '*-plain.jar' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+          $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' `
+                      | Where-Object { $_.Name -notlike '*-plain.jar' } `
+                      | Sort-Object LastWriteTime -Descending `
+                      | Select-Object -First 1).FullName
 
           if (-not $jarFile) {
               Write-Error "❌ No executable JAR file found in: $sourceDir"
@@ -131,7 +141,7 @@ jobs:
 
           # JAR 파일 복사
           Copy-Item -Path $jarFile -Destination $deployDir -Force
-          Write-Output "✅ Executable JAR copied to: $deployDir"
+          Write-Output "✅ JAR file copied to: $deployDir"
 
       ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행
       - name: Restart Backend Service
@@ -139,14 +149,30 @@ jobs:
         run: |
           $deployDir = 'D:\actions_work\netcore\deploy\backend'
 
+          # 배포 디렉토리에서 최신 JAR 파일 검색
+          $jarFile = (Get-ChildItem -Path $deployDir -Filter '*.jar' `
+                      | Sort-Object LastWriteTime -Descending `
+                      | Select-Object -First 1).Name
+
+          if (-not $jarFile) {
+              Write-Error "❌ No JAR file found in $deployDir."
+              exit 1
+          }
+
           # 기존 실행 중인 애플리케이션 종료
-          $process = Get-Process -Name 'java' -ErrorAction SilentlyContinue
+          $process = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
+                     | Where-Object { $_.CommandLine -match $jarFile }
+
           if ($process) {
-              Stop-Process -Id $process.Id -Force
-              Write-Output "✅ Existing backend service stopped."
+              Stop-Process -Id $process.ProcessId -Force
+              Write-Output "✅ Java process with PID $($process.ProcessId) stopped."
+          } else {
+              Write-Output "⚠️ No matching Java process found to stop."
           }
 
           # 최신 JAR 파일 실행
-          $jarFile = Join-Path -Path $deployDir -ChildPath (Get-ChildItem -Path $deployDir -Filter '*.jar' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).Name
-          Start-Process -FilePath "java.exe" -ArgumentList "-jar `"$deployDir\$jarFile`"" -NoNewWindow -PassThru
-          Write-Output "✅ Backend service restarted with: $jarFile"
+          Start-Process -FilePath "java.exe" -ArgumentList "-jar `"$deployDir\$jarFile`"" `
+                        -NoNewWindow `
+                        -RedirectStandardOutput "$deployDir\output.log" `
+                        -RedirectStandardError "$deployDir\error.log"
+          Write-Output "✅ Backend service restarted with JAR: $jarFile. Logs are available in $deployDir."
