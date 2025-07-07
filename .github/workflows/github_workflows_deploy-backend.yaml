@@ -143,7 +143,7 @@ jobs:
           Copy-Item -Path $jarFile -Destination $deployDir -Force
           Write-Output "✅ JAR file copied to: $deployDir"
 
-      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행
+      ### 8. 기존 백엔드 애플리케이션 종료 및 새로 실행 
       - name: Restart Backend Service
         shell: powershell
         run: |
