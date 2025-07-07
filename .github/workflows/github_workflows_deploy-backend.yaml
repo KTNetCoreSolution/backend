@@ -100,10 +100,17 @@ jobs:
           # Java 설치 확인
           Write-Output "🔍 Checking Java environment..."
           try {
-              $javaVersion = & $javaExe -version 2>&1
-              Write-Output "✅ Java is installed: $javaVersion"
+              # java -version의 출력을 캡처
+              $javaOutput = & $javaExe -version 2>&1 | Out-String
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "✅ Java is installed: $javaOutput"
+              } else {
+                  Write-Error "❌ Java execution failed with exit code $LASTEXITCODE. Output: $javaOutput"
+                  exit 1
+              }
           } catch {
               Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
+              Write-Output "🔍 Java output (if any): $javaOutput"
               exit 1
           }
 
@@ -211,10 +218,16 @@ jobs:
 
           # Java 버전 확인
           try {
-              $javaVersion = & $javaExe -version 2>&1
-              Write-Output "✅ Java is installed: $javaVersion"
+              $javaOutput = & $javaExe -version 2>&1 | Out-String
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "✅ Java is installed: $javaOutput"
+              } else {
+                  Write-Error "❌ Java execution failed with exit code $LASTEXITCODE. Output: $javaOutput"
+                  exit 1
+              }
           } catch {
               Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
+              Write-Output "🔍 Java output (if any): $javaOutput"
               exit 1
           }
       
