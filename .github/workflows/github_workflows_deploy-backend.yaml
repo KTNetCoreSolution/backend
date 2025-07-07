@@ -107,13 +107,19 @@ jobs:
           Write-Output "📂 Loading environment variables from: $envFilePath"
 
           # .env 파일 라인별로 읽기 및 환경 변수 등록
-          Get-Content $envFilePath | ForEach-Object {
-              if ($_ -match '^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$') {
-                  $key = $matches['key']
-                  $value = $matches['value']
-                  [System.Environment]::SetEnvironmentVariable($key, $value)
-                  Write-Output "✅ Loaded environment variable: $key"
+          try {
+              Get-Content $envFilePath | ForEach-Object {
+                  if ($_ -match "^(?[A-Za-z_][A-Za-z0-9_]*)=(?.*)$") {
+                      $key = $matches['key']
+                      $value = $matches['value']
+                      [System.Environment]::SetEnvironmentVariable($key, $value)
+                      Write-Output "✅ Loaded environment variable: $key"
+                  }
               }
+          } catch {
+              Write-Error "❌ Failed to load environment variables from the .env file."
+              Write-Error $_.Exception.Message
+              exit 1
           }
 
       ### 7. Backend 빌드 (테스트 미포함)
