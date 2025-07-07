@@ -97,7 +97,7 @@ jobs:
         shell: powershell
         run: |
           # `.env` 파일 경로 설정 (GitHub Actions 작업 디렉토리 기준)
-          $envFilePath = "$env:GITHUB_WORKSPACE\source\backend\.env"
+          $envFilePath = "D:\actions_work\netcore\source\backend\.env"
       
           # `.env` 파일 존재 여부 확인
           if (!(Test-Path -Path $envFilePath)) {
@@ -127,7 +127,7 @@ jobs:
       - name: Build Backend
         shell: powershell
         run: |
-          $buildDir = "$env:GITHUB_WORKSPACE\source\backend"
+          $buildDir = "D:\actions_work\netcore\source\backend"
           cd $buildDir
       
           try {
