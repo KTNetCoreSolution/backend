@@ -64,19 +64,28 @@ jobs:
           Write-Output "✅ Source code cloned to: $sourceDir"
           
       ### 4. .env 파일 복사
-      - name: Copy .env file
+      - name: Copy .env file to multiple locations
         shell: powershell
         run: |
+          # 원본 .env 파일 경로
           $envSourcePath = 'D:\actions_work\netcore\env\backend.env'
-          $envDestinationPath = 'D:\actions_work\netcore\source\backend\.env'
 
-          # .env 파일이 존재하는지 확인하고 복사
-          if (Test-Path -Path $envSourcePath) {
+          # 복사 대상 경로들
+          $destinationPaths = @(
+              'D:\actions_work\netcore\source\backend\.env',
+              'D:\actions_work\netcore\deploy\backend\.env'
+          )
+
+          # .env 파일 존재 여부 확인
+          if (-Not (Test-Path -Path $envSourcePath)) {
+              Write-Output "❌ .env source file not found: $envSourcePath"
+              exit 1 # 실패 처리
+          }
+
+          # 각 경로로 복사
+          foreach ($envDestinationPath in $destinationPaths) {
               Copy-Item -Path $envSourcePath -Destination $envDestinationPath -Force
               Write-Output "✅ .env file copied to: $envDestinationPath"
-          } else {
-              Write-Output "❌ .env source file not found: $envSourcePath"
-              exit 1  # 실패 처리
           }
 
        ### 5. Java 환경 확인
@@ -170,135 +179,55 @@ jobs:
           # JAR 파일 복사
           Copy-Item -Path $jarFile -Destination $deployDir -Force
           Write-Output "✅ Executable JAR copied to: $deployDir"
+          
+      ### 9. 불필요한 디렉터리 삭제
+      - name: Clean Unnecessary Directories
+        shell: powershell
+        run: |
+          $foldersToDelete = @(
+              "D:\actions_work\netcore\backend",
+              "D:\actions_work\netcore\backend\backend"
+          )
 
-      ### 9. 기존 백엔드 애플리케이션 종료 및 새로 실행
+          foreach ($folder in $foldersToDelete) {
+              if (Test-Path -Path $folder) {
+                  try {
+                      Remove-Item -Path $folder -Recurse -Force
+                      Write-Output "✅ Deleted folder: $folder"
+                  } catch {
+                      Write-Output "❌ Failed to delete folder: $folder. Error: $($_.Exception.Message)"
+                      exit 1
+                  }
+              } else {
+                  Write-Output "ℹ️ Folder does not exist: $folder"
+              }
+          }
+
+      ### 10. 기존 백엔드 애플리케이션 종료 및 새로 실행
       - name: Restart Backend Service
         shell: powershell
         run: |
-          $deployDir = Join-Path $env:GITHUB_WORKSPACE 'deploy\backend'
-          $javaHome = 'D:\tool\jdk-21.0.7.6'
-          $javaExe = "$javaHome\bin\java.exe"
+          # 실행할 PowerShell 스크립트 경로
+          $scriptPath = 'D:\actions_runner_backend\run_backend.ps1'
 
-          # Java PATH 설정 (중복 추가 방지)
-          if ($env:PATH -notlike "*$javaHome\bin*") {
-              $env:PATH = "$javaHome\bin;" + $env:PATH
-          }
-          $env:JAVA_HOME = $javaHome
-
-          # 현재 PATH 출력 (디버깅용)
-          Write-Output "🔍 Current PATH: $env:PATH"
-
-          # Java 실행 파일 존재 여부 확인
-          Write-Output "🔍 Checking Java executable at: $javaExe"
-          if (-not (Test-Path -Path $javaExe)) {
-              Write-Error "❌ Java executable not found at: $javaExe"
+          # 스크립트가 존재하는지 확인
+          if (-Not (Test-Path -Path $scriptPath)) {
+              Write-Error "❌ Backend runner script not found: $scriptPath"
               exit 1
           }
 
-          # Java 버전 확인
-          Write-Output "🔍 Checking Java environment..."
+          # 스크립트 실행
+          Write-Output "✅ Running backend script: $scriptPath"
           try {
-              # java -version의 stdout과 stderr을 별도로 캡처
-              $javaOutput = & $javaExe -version 2>&1 | Out-String
-              Write-Output "🔍 Raw Java output: $javaOutput"
-              if ($LASTEXITCODE -eq 0 -or $javaOutput -match "openjdk version") {
-                  Write-Output "✅ Java is installed: $javaOutput"
+              # PowerShell 스크립트 실행
+              & $scriptPath
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Output "✅ Backend application restarted successfully."
               } else {
-                  Write-Error "❌ Java execution failed with exit code $LASTEXITCODE. Output: $javaOutput"
-                  exit 1
+                  Write-Error "❌ Error occurred while restarting backend. Exit code: $LASTEXITCODE"
+                  exit $LASTEXITCODE
               }
           } catch {
-              Write-Error "❌ Failed to execute Java: $($_.Exception.Message)"
-              Write-Output "🔍 Java output (if any): $javaOutput"
+              Write-Error "❌ An exception occurred while running the script: $($_.Exception.Message)"
               exit 1
           }
-
-          # 배포 디렉토리 확인
-          if (-not (Test-Path -Path $deployDir)) {
-              Write-Error "❌ Deploy directory does not exist: $deployDir"
-              exit 1
-          }
-
-          # 최신 JAR 파일 검색
-          $jarFile = (Get-ChildItem -Path $deployDir -Filter '*.jar' `
-                      | Sort-Object LastWriteTime -Descending `
-                      | Select-Object -First 1).Name
-
-          if (-not $jarFile) {
-              Write-Error "❌ No JAR file found in $deployDir."
-              exit 1
-          }
-
-          $jarPath = Join-Path $deployDir $jarFile
-          if (-not (Test-Path -Path $jarPath)) {
-              Write-Error "❌ JAR file does not exist: $jarPath"
-              exit 1
-          }
-
-          # 기존 실행 중인 애플리케이션 종료
-          $process = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
-                     | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
-
-          if ($process) {
-              Write-Output "🛑 Stopping Java process with PID $($process.ProcessId)..."
-              Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
-              Start-Sleep -Seconds 3
-          } else {
-              Write-Output "ℹ️ No matching Java process found to stop."
-          }
-
-          # 환경 변수 확인
-          Write-Output "🔍 Checking critical environment variables:"
-          $envVars = @('DB_HOST', 'DB_PORT', 'API_KEY')
-          foreach ($var in $envVars) {
-              $value = [System.Environment]::GetEnvironmentVariable($var, 'Process')
-              if ($value) {
-                  Write-Output "$var = $value"
-              } else {
-                  Write-Warning "⚠️ $var is not set!"
-              }
-          }
-
-          # JAR 파일 실행
-          Write-Output "🚀 Starting backend service with JAR: $jarFile"
-          try {
-              Start-Process -FilePath $javaExe -ArgumentList "-jar `"$jarPath`"" `
-                            -NoNewWindow `
-                            -RedirectStandardOutput "$deployDir\output.log" `
-                            -RedirectStandardError "$deployDir\error.log" `
-                            -ErrorAction Stop
-              Start-Sleep -Seconds 5
-
-              # 실행된 프로세스 확인
-              $newProcess = Get-WmiObject -Query "Select * From Win32_Process Where Name = 'java.exe'" `
-                            | Where-Object { $_.CommandLine -match [regex]::Escape($jarFile) }
-              if ($newProcess) {
-                  Write-Output "✅ Backend service started with PID $($newProcess.ProcessId)."
-              } else {
-                  Write-Error "❌ Failed to start backend service. Checking logs..."
-                  if (Test-Path -Path "$deployDir\error.log") {
-                      Write-Output "📜 Error Log:"
-                      Get-Content -Path "$deployDir\error.log" -Tail 20
-                  }
-                  exit 1
-              }
-          } catch {
-              Write-Error "❌ Failed to start JAR: $($_.Exception.Message)"
-              if (Test-Path -Path "$deployDir\error.log") {
-                  Write-Output "📜 Error Log:"
-                  Get-Content -Path "$deployDir\error.log" -Tail 20
-              }
-              exit 1
-          }
-
-          # 로그 파일 출력
-          if (Test-Path -Path "$deployDir\output.log") {
-              Write-Output "📜 Application Log:"
-              Get-Content -Path "$deployDir\output.log" -Tail 20
-          }
-          if (Test-Path -Path "$deployDir\error.log") {
-              Write-Output "📜 Error Log:"
-              Get-Content -Path "$deployDir\error.log" -Tail 20
-          }
-
-          Write-Output "✅ Backend service restarted with JAR: $jarFile. Logs are available in $deployDir."
