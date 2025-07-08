@@ -184,22 +184,54 @@ jobs:
       - name: Clean Unnecessary Directories
         shell: powershell
         run: |
+          # 삭제 대상 폴더 목록
           $foldersToDelete = @(
               "D:\actions_work\netcore\backend",
               "D:\actions_work\netcore\backend\backend"
           )
 
           foreach ($folder in $foldersToDelete) {
+              # 폴더 존재 여부 확인
               if (Test-Path -Path $folder) {
-                  try {
-                      Remove-Item -Path $folder -Recurse -Force
-                      Write-Output "✅ Deleted folder: $folder"
-                  } catch {
-                      Write-Output "❌ Failed to delete folder: $folder. Error: $($_.Exception.Message)"
+                  Write-Output "🔍 Checking processes locking the folder: $folder"
+
+                  # 해당 폴더를 사용 중인 프로세스 종료
+                  $processesUsingFolder = Get-WmiObject Win32_Process | Where-Object { $_.ExecutablePath -like "$folder*" }
+                  if ($processesUsingFolder) {
+                      foreach ($proc in $processesUsingFolder) {
+                          try {
+                              Write-Output "🛑 Terminating process using folder: $($proc.Name) (PID: $($proc.ProcessId))"
+                              Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+                          } catch {
+                              Write-Output "❌ Failed to terminate process: $($proc.Name) (PID: $($proc.ProcessId)). Error: $($_.Exception.Message)"
+                          }
+                      }
+                  }
+
+                  # 삭제 재시도 (최대 3번)
+                  $retry = 0
+                  $maxRetries = 3
+                  do {
+                      try {
+                          # 폴더 삭제 시도
+                          Write-Output "🗑️ Attempting to delete folder: $folder (Try #$($retry + 1))"
+                          Remove-Item -Path $folder -Recurse -Force
+                          Write-Output "✅ Successfully deleted folder: $folder"
+                          break
+                      } catch {
+                          Write-Output "❌ Failed to delete folder: $folder. Error: $($_.Exception.Message)"
+                          Start-Sleep -Seconds 3 # 대기 후 재시도
+                          $retry++
+                      }
+                  } while ($retry -lt $maxRetries)
+
+                  # 최대 재시도 후 실패 확인
+                  if (Test-Path -Path $folder) {
+                      Write-Output "❌ Could not delete folder after $maxRetries attempts: $folder"
                       exit 1
                   }
               } else {
-                  Write-Output "ℹ️ Folder does not exist: $folder"
+                  Write-Output "ℹ️ Folder does not exist or already deleted: $folder"
               }
           }
 
