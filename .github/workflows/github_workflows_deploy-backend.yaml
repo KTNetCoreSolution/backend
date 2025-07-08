@@ -250,10 +250,10 @@ jobs:
               exit 1
           }
 
-          # 스크립트를 비동기로 실행
+          # 백그라운드에서 스크립트 실행 (NoNewWindow 제거)
           Write-Output "✅ Running backend script as a background process: $scriptPath"
           try {
-              Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden -NoNewWindow
+              Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
               Write-Output "✅ Backend script initiated. Exiting GitHub Actions process."
           } catch {
               Write-Error "❌ An exception occurred while starting the backend script: $($_.Exception.Message)"
