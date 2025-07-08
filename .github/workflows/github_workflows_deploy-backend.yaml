@@ -208,9 +208,9 @@ jobs:
                       }
                   }
 
-                  # 삭제 재시도 (최대 3번)
+                  # 삭제 재시도 (최대 1번)
                   $retry = 0
-                  $maxRetries = 3
+                  $maxRetries = 1
                   do {
                       try {
                           # 폴더 삭제 시도
@@ -234,31 +234,35 @@ jobs:
               }
           }
 
-          # 폴더 삭제 실패 여부와 관계없이 정상적으로 9번 단계로 계속 진행
+          # 폴더 삭제 실패 여부와 관계없이 정상적으로 10번 단계로 계속 진행
           Write-Output "✅ Cleanup process completed. Proceeding to the next step."
 
       ### 10. 기존 백엔드 애플리케이션 종료 및 새로 실행
-      - name: Restart Backend Service
+      - name: Copy log file to trigger folder
         shell: powershell
         run: |
-          # 실행할 PowerShell 스크립트 경로
-          $scriptPath = 'D:\actions_runner_backend\run_backend.ps1'
+          # 로그 파일 경로
+          $sourceFile = 'D:\actions_work\netcore\job\run_backend_origin\java_start.log'
+          $destinationFolder = 'D:\actions_work\netcore\job\run_backend\'
+          $destinationFile = Join-Path $destinationFolder 'java_start.log'
       
-          # 스크립트가 존재하는지 확인
-          if (-Not (Test-Path -Path $scriptPath)) {
-              Write-Error "❌ Backend runner script not found: $scriptPath"
+          # 소스 파일 존재 확인
+          if (-Not (Test-Path -Path $sourceFile)) {
+              Write-Error "❌ Source log file not found: $sourceFile"
               exit 1
           }
       
-          # 콘솔 창이 보이도록 설정하여 스크립트 실행
-          Write-Output "✅ Running backend script with visible console: $scriptPath"
-          try {
-              # 백그라운드가 아니라 콘솔 창으로 실행
-              Start-Process -FilePath "powershell.exe" `
-                  -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
-                  -WindowStyle Normal   # 창을 보이도록 설정
-              Write-Output "✅ Backend script executed. Exiting GitHub Actions process."
-          } catch {
-              Write-Error "❌ An exception occurred while starting the backend script: $($_.Exception.Message)"
+          # 폴더가 없으면 생성
+          if (-Not (Test-Path -Path $destinationFolder)) {
+              New-Item -ItemType Directory -Path $destinationFolder -Force
+              Write-Output "✅ Destination folder created: $destinationFolder"
+          }
+      
+          # 파일 복사 후 확인
+          Copy-Item -Path $sourceFile -Destination $destinationFile -Force
+          if (Test-Path -Path $destinationFile) {
+              Write-Output "✅ Log file copied to destination: $destinationFile"
+          } else {
+              Write-Error "❌ Failed to copy log file."
               exit 1
           }
