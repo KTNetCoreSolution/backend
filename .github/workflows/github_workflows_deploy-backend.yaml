@@ -243,18 +243,21 @@ jobs:
         run: |
           # 실행할 PowerShell 스크립트 경로
           $scriptPath = 'D:\actions_runner_backend\run_backend.ps1'
-
+      
           # 스크립트가 존재하는지 확인
           if (-Not (Test-Path -Path $scriptPath)) {
               Write-Error "❌ Backend runner script not found: $scriptPath"
               exit 1
           }
-
-          # 백그라운드에서 스크립트 실행 (NoNewWindow 제거)
-          Write-Output "✅ Running backend script as a background process: $scriptPath"
+      
+          # 콘솔 창이 보이도록 설정하여 스크립트 실행
+          Write-Output "✅ Running backend script with visible console: $scriptPath"
           try {
-              Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
-              Write-Output "✅ Backend script initiated. Exiting GitHub Actions process."
+              # 백그라운드가 아니라 콘솔 창으로 실행
+              Start-Process -FilePath "powershell.exe" `
+                  -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+                  -WindowStyle Normal   # 창을 보이도록 설정
+              Write-Output "✅ Backend script executed. Exiting GitHub Actions process."
           } catch {
               Write-Error "❌ An exception occurred while starting the backend script: $($_.Exception.Message)"
               exit 1
