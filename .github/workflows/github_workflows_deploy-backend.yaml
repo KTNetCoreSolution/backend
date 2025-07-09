@@ -139,7 +139,31 @@ jobs:
               exit 1
           }
       
-      ### 7. Backend 빌드 (테스트 미포함)     
+      ### 7. 기존 백엔드 애플리케이션 중지
+      - name: Stop Backend Service Before Build
+        shell: powershell
+        run: |
+          # 서비스 이름
+          $serviceName = 'Run_backend_service'
+      
+          Write-Host "🛑 Stopping the backend service: $serviceName (if running)" -ForegroundColor Yellow
+      
+          # 서비스 상태 확인
+          $serviceStatus = (Get-Service -Name $serviceName -ErrorAction SilentlyContinue).Status
+          if (-not $serviceStatus) {
+              Write-Host "ℹ️ Service '$serviceName' is not found or already stopped. Proceeding with build." -ForegroundColor Cyan
+          } elseif ($serviceStatus -eq 'Running') {
+              try {
+                  Stop-Service -Name $serviceName -Force
+                  Start-Sleep -Seconds 3
+                  Write-Host "✅ Service '$serviceName' has been stopped." -ForegroundColor Green
+              } catch {
+                  Write-Error "❌ Failed to stop service '$serviceName'. Error: $($_.Exception.Message)"
+                  exit 1
+              }
+          }
+    
+      ### 8. Backend 빌드 (테스트 미포함)
       - name: Build Backend
         shell: powershell
         run: |
@@ -155,33 +179,33 @@ jobs:
               exit 1
           }
 
-      ### 8. 빌드 결과물 배포 디렉터리로 복사
+      ### 9. 빌드 결과물 배포 디렉터리로 복사
       - name: Deploy Built JAR
         shell: powershell
         run: |
           $baseDir = "D:\actions_work\netcore"
           $sourceDir = "$baseDir\source\backend\build\libs"
           $deployDir = "$baseDir\deploy\backend"
-
+      
           # 실행 가능한 JAR 파일 검색 (plain 제외)
           $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' | Where-Object { $_.Name -notlike '*-plain.jar' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
-
+      
           if (-not $jarFile) {
               Write-Error "❌ No executable JAR file found in: $sourceDir"
               exit 1
           }
-
+      
           if (!(Test-Path -Path $deployDir)) {
               New-Item -ItemType Directory -Path $deployDir -Force
               Write-Output "✅ Deploy directory created at: $deployDir"
           }
-
+      
           # JAR 파일 복사
           Copy-Item -Path $jarFile -Destination $deployDir -Force
           Write-Output "✅ Executable JAR copied to: $deployDir"
           
 
-      ### 9. 기존 백엔드 애플리케이션 종료 및 새로 실행
+      ### 10. 기존 서비스 재시작
       - name: Restart Backend Service
         shell: powershell
         run: |
@@ -198,13 +222,6 @@ jobs:
           }
       
           try {
-              # 서비스가 실행 중이라면 중지
-              if ($serviceStatus -eq 'Running') {
-                  Write-Host "🛑 Stopping service '$serviceName'..." -ForegroundColor Yellow
-                  Stop-Service -Name $serviceName -Force
-                  Start-Sleep -Seconds 3
-              }
-      
               # 서비스 시작
               Write-Host "▶️ Starting service '$serviceName'..." -ForegroundColor Green
               Start-Service -Name $serviceName
