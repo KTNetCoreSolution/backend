@@ -53,7 +53,8 @@ public class SecurityConfig {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 적용
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/" + apiPathConfig.getBasePath() + "/**")) // CSRF 예외 처리
+//                .csrf(csrf -> csrf.ignoringRequestMatchers("/" + apiPathConfig.getBasePath() + "/**")) // CSRF 예외 처리
+                .csrf(csrf -> csrf.disable()) //JWT 인증을 사용하고 있기 때문에
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll() // Swagger UI와 OpenAPI Docs 허용
