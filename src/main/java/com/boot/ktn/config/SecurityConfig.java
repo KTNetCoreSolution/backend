@@ -19,6 +19,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -55,15 +56,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 적용
                 //.csrf(csrf -> csrf.ignoringRequestMatchers("/" + apiPathConfig.getBasePath() + "/**")) // CSRF 예외 처리
                 .csrf(csrf -> csrf.disable()) //JWT 인증을 사용하고 있기 때문에
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
-                        .permitAll() // Swagger UI와 OpenAPI Docs 허용
-                        .requestMatchers("/" + apiPathConfig.getPublicPath() + "/**", "/" + apiPathConfig.getAuthPath() + "/**")
-                        .permitAll() // 공개 API 허용
-                        .requestMatchers("/" + apiPathConfig.getBasePath() + "/**")
-                        .authenticated() // /api/** 인증 필요
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger UI와 OpenAPI Docs 허용
+                        .requestMatchers("/" + apiPathConfig.getPublicPath() + "/**", "/" + apiPathConfig.getAuthPath() + "/**").permitAll() // 공개 API 허용
+                        .requestMatchers("/" + apiPathConfig.getBasePath() + "/**").authenticated() // /api/** 인증 필요
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터
                 .exceptionHandling(ex -> ex

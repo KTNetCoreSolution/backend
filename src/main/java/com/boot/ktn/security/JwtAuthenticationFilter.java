@@ -50,13 +50,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        String authPath = "/" + apiPathConfig.getAuthPath();
-        String publicPath = "/" + apiPathConfig.getPublicPath();
+        String authPath = "/" + (apiPathConfig.getAuthPath() != null ? apiPathConfig.getAuthPath() : "auth");
+        String publicPath = "/" + (apiPathConfig.getPublicPath() != null ? apiPathConfig.getPublicPath() : "public");
+
+        // 필터링 제외 경로 조건
         boolean shouldNotFilter = path.equals(authPath + "/login") ||
+                path.startsWith(authPath + "/login/") || // "/login/" 허용
                 path.equals(authPath + "/check") ||
                 path.equals(authPath + "/logout") ||
                 path.startsWith(publicPath);
-        logger.debug("shouldNotFilter: path={} result={}", path, shouldNotFilter);
+
+        // 상세 디버깅 로깅
+        logger.debug("shouldNotFilter: method={} path={} result={}",
+                request.getMethod(),
+                path,
+                shouldNotFilter);
+
         return shouldNotFilter;
     }
 }
