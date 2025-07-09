@@ -182,24 +182,43 @@ jobs:
           
 
       ### 9. 기존 백엔드 애플리케이션 종료 및 새로 실행
-      - name: Execute backend runner script
+      - name: Restart Backend Service
         shell: powershell
         run: |
-          # 실행할 PS1 스크립트 경로
-          $backendScript = 'D:\actions_runner_backend\run_backend.ps1'
+          # 서비스 이름
+          $serviceName = 'Run_backend_service'
       
-          # 스크립트 존재 여부 확인
-          Write-Host "🔄 Attempting to execute the backend runner script: $backendScript" -ForegroundColor Cyan
-          if (-Not (Test-Path -Path $backendScript)) {
-              Write-Error "❌ Backend runner script not found: $backendScript"
+          Write-Host "🔄 Attempting to restart the backend service: $serviceName" -ForegroundColor Cyan
+      
+          # 서비스 상태 확인
+          $serviceStatus = (Get-Service -Name $serviceName -ErrorAction SilentlyContinue).Status
+          if (-not $serviceStatus) {
+              Write-Error "❌ Service '$serviceName' not found. Please ensure it is properly registered."
               exit 1
           }
       
-          # 스크립트 실행
           try {
-              Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File `"$backendScript`"" -NoNewWindow -PassThru
-              Write-Host "✅ Successfully started backend runner script in the background." -ForegroundColor Green
+              # 서비스가 실행 중이라면 중지
+              if ($serviceStatus -eq 'Running') {
+                  Write-Host "🛑 Stopping service '$serviceName'..." -ForegroundColor Yellow
+                  Stop-Service -Name $serviceName -Force
+                  Start-Sleep -Seconds 3
+              }
+      
+              # 서비스 시작
+              Write-Host "▶️ Starting service '$serviceName'..." -ForegroundColor Green
+              Start-Service -Name $serviceName
+      
+              # 서비스 시작 상태 확인
+              Start-Sleep -Seconds 5  # 잠시 기다렸다가 상태 확인
+              $currentStatus = (Get-Service -Name $serviceName).Status
+              if ($currentStatus -eq 'Running') {
+                  Write-Host "✅ Service '$serviceName' successfully restarted." -ForegroundColor Green
+              } else {
+                  Write-Error "❌ Service '$serviceName' failed to start. Please check system logs."
+                  exit 1
+              }
           } catch {
-              Write-Error "❌ Error while attempting to execute backend runner script: $($_.Exception.Message)"
+              Write-Error "❌ Error while restarting service '$serviceName': $($_.Exception.Message)"
               exit 1
           }
