@@ -54,24 +54,41 @@ public class SecurityConfig {
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 적용
-                //.csrf(csrf -> csrf.ignoringRequestMatchers("/" + apiPathConfig.getBasePath() + "/**")) // CSRF 예외 처리
-                .csrf(csrf -> csrf.disable()) //JWT 인증을 사용하고 있기 때문에
+                // JWT 인증 사용으로 CSRF는 비활성화
+                .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+                        // OPTIONS 요청(프리플라이트 요청)은 인증 없이 허용 (CORS 헤더 대응)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger UI와 OpenAPI Docs 허용
-                        .requestMatchers("/" + apiPathConfig.getPublicPath() + "/**", "/" + apiPathConfig.getAuthPath() + "/**").permitAll() // 공개 API 허용
-                        .requestMatchers("/" + apiPathConfig.getBasePath() + "/**").authenticated() // /api/** 인증 필요
+
+                        // Swagger 및 OpenAPI 경로는 인증 없이 접근 가능
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // 공용(public) 경로는 인증 없이 허용
+                        .requestMatchers("/" + apiPathConfig.getPublicPath() + "/**").permitAll()
+
+                        // 인증(auth) 경로 중 로그인(/login), 로그아웃(/logout), 상태 확인(/check)은 허용
+                        .requestMatchers("/" + apiPathConfig.getAuthPath() + "/login",
+                                "/" + apiPathConfig.getAuthPath() + "/logout",
+                                "/" + apiPathConfig.getAuthPath() + "/check").permitAll()
+
+                        // 그 외 기본 경로는 인증 필요
+                        .requestMatchers("/" + apiPathConfig.getBasePath() + "/**").authenticated()
+
+                        // 기타 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, e) -> {  // 인증 실패 처리
-                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            res.setContentType("application/json");
-                            res.getWriter().write("{\"success\": false, \"message\": \"Unauthorized\"}");
-                        })
-                );
+
+                // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 전에 추가
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+
+                // 인증 실패 시 응답 처리
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {
+                    // 인증 실패 응답 설정
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"success\": false, \"message\": \"Unauthorized\"}");
+                }));
 
         return http.build();
     }

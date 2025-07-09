@@ -49,22 +49,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = request.getRequestURI(); // 요청 URI
         String authPath = "/" + (apiPathConfig.getAuthPath() != null ? apiPathConfig.getAuthPath() : "auth");
         String publicPath = "/" + (apiPathConfig.getPublicPath() != null ? apiPathConfig.getPublicPath() : "public");
 
-        // 필터링 제외 경로 조건
-        boolean shouldNotFilter = path.equals(authPath + "/login") ||
-                path.startsWith(authPath + "/login/") || // "/login/" 허용
-                path.equals(authPath + "/check") ||
-                path.equals(authPath + "/logout") ||
-                path.startsWith(publicPath);
+        // 필터링 제외 경로: 인증 및 공개 경로 처리
+        boolean shouldNotFilter = path.equals(authPath + "/login") ||       // 로그인
+                path.startsWith(authPath + "/login/") || // /login/ 하위 경로
+                path.equals(authPath + "/check") ||      // 인증 상태 확인
+                path.equals(authPath + "/logout") ||     // 로그아웃
+                path.startsWith(publicPath);            // 공용 경로(public)
 
-        // 상세 디버깅 로깅
-        logger.debug("shouldNotFilter: method={} path={} result={}",
-                request.getMethod(),
-                path,
-                shouldNotFilter);
+        // 로그 기록: 필터 제외 여부와 요청 정보를 디버깅에 활용
+        logger.debug("Filter Decision - method: {}, path: {}, shouldNotFilter: {}",
+                request.getMethod(), path, shouldNotFilter);
 
         return shouldNotFilter;
     }
