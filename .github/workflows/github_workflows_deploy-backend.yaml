@@ -18,7 +18,7 @@ jobs:
       - name: Add Safe Directory
         shell: powershell
         run: |
-          $safeDir = 'D:/actions_work/netcore/source/backend'
+          $safeDir = 'D:/workspace/netcore/source/backend'
           git config --global --add safe.directory $safeDir
           Write-Output "✅ Git safe directory added for: $safeDir"
 
@@ -26,22 +26,39 @@ jobs:
       - name: Backup Current Source Code
         shell: powershell
         run: |
-          $baseDir = 'D:\actions_work\netcore'
-          $sourceDir = "$baseDir\source\backend"
-          $backupBaseDir = "$baseDir\backup\source\backend"
-
-          # 현재 월별 백업 디렉터리 생성
-          $currentMonthDir = Join-Path -Path $backupBaseDir -ChildPath (Get-Date -Format 'yyyyMM')
-          if (!(Test-Path -Path $currentMonthDir)) {
-              New-Item -ItemType Directory -Path $currentMonthDir -Force
+          # 백업 관련 함수 정의
+          function Backup-Files {
+              param([string]$SourcePath, [string]$BackupPath)
+      
+              # 백업 대상 디렉터리 (월별 디렉터리) 생성
+              $currentMonthDir = Join-Path -Path $BackupPath -ChildPath (Get-Date -Format 'yyyyMM')
+              if (-not (Test-Path -Path $currentMonthDir)) {
+                  Write-Output "📂 Creating backup directory: $currentMonthDir"
+                  New-Item -ItemType Directory -Path $currentMonthDir -Force
+              }
+      
+              # 압축 파일 이름 설정
+              $currentTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
+              $backupFilePath = Join-Path -Path $currentMonthDir -ChildPath $currentTime
+      
+              # 압축 생성 (모든 파일 / 폴더 포함)
+              Write-Output "🔄 Compressing source files to $backupFilePath..."
+              Compress-Archive -Path "$SourcePath\*" -DestinationPath $backupFilePath -Force
+      
+              Write-Output "✅ Backup completed at $backupFilePath"
           }
-
-          # 백업 파일 생성 (ZIP 형식으로 저장)
-          $currentDateTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
-          $backupFile = Join-Path -Path $currentMonthDir -ChildPath $currentDateTime
-          Compress-Archive -Path "$sourceDir\*" -DestinationPath $backupFile -Force
-
-          Write-Output "✅ Source backup created at: $backupFile"
+      
+          # 경로 정의
+          $baseDir = 'D:\workspace\netcore'
+          $sourceDir = "$baseDir\source\backend"          # 백엔드 소스 코드 디렉터리
+          $deployDir = "$baseDir\deploy\backend"          # 배포 디렉터리
+          $sourceBackupDir = "$baseDir\backup\source\backend"  # 소스 코드 백업 디렉터리
+          $deployBackupDir = "$baseDir\backup\deploy\backend"  # 배포 파일 백업 디렉터리
+      
+          # 소스 코드 백업
+          Backup-Files -SourcePath $sourceDir -BackupPath $sourceBackupDir
+          # 배포 파일 백업
+          Backup-Files -SourcePath $deployDir -BackupPath $deployBackupDir
 
       ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
@@ -49,7 +66,7 @@ jobs:
         run: |
           $repoUrl = "https://${{ secrets.GITHUB_ACTOR }}:${{ secrets.KTNETCOREACTION }}@github.com/KTNetCoreSolution/backend.git"
           $branch = 'main'
-          $sourceDir = 'D:\actions_work\netcore\source\backend'
+          $sourceDir = 'D:\workspace\netcore\source\backend'
 
           # 기존 소스 폴더 삭제
           if (Test-Path -Path $sourceDir) {
@@ -68,12 +85,12 @@ jobs:
         shell: powershell
         run: |
           # 원본 .env 파일 경로
-          $envSourcePath = 'D:\actions_work\netcore\env\backend.env'
+          $envSourcePath = 'D:\workspace\netcore\env\backend.env'
 
           # 복사 대상 경로들
           $destinationPaths = @(
-              'D:\actions_work\netcore\source\backend\.env',
-              'D:\actions_work\netcore\deploy\backend\.env'
+              'D:\workspace\netcore\source\backend\.env',
+              'D:\workspace\netcore\deploy\backend\.env'
           )
 
           # .env 파일 존재 여부 확인
@@ -106,7 +123,7 @@ jobs:
         shell: powershell
         run: |
           # `.env` 파일 경로 설정 (GitHub Actions 작업 디렉토리 기준)
-          $envFilePath = "D:\actions_work\netcore\source\backend\.env"
+          $envFilePath = "D:\workspace\netcore\source\backend\.env"
       
           # `.env` 파일 존재 여부 확인
           if (!(Test-Path -Path $envFilePath)) {
@@ -167,7 +184,7 @@ jobs:
       - name: Build Backend
         shell: powershell
         run: |
-          $buildDir = "D:\actions_work\netcore\source\backend"
+          $buildDir = "D:\workspace\netcore\source\backend"
           cd $buildDir
       
           try {
@@ -183,7 +200,7 @@ jobs:
       - name: Deploy Built JAR
         shell: powershell
         run: |
-          $baseDir = "D:\actions_work\netcore"
+          $baseDir = "D:\workspace\netcore"
           $sourceDir = "$baseDir\source\backend\build\libs"
           $deployDir = "$baseDir\deploy\backend"
       
