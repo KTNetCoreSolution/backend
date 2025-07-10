@@ -87,6 +87,15 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                 // JUnit 런처
 }
 
+tasks.register('copyFrontend', Copy) {
+	from '../frontend/dist' // 수동 빌드된 dist 폴더
+	into 'src/main/resources/static'
+}
+
+tasks.named('processResources') {
+	dependsOn 'copyFrontend'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }

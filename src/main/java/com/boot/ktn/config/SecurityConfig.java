@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/" + apiPathConfig.getAuthPath() + "/login",
                                 "/" + apiPathConfig.getAuthPath() + "/logout",
                                 "/" + apiPathConfig.getAuthPath() + "/check").permitAll()
+                        .requestMatchers("/", "/index.html", "/assets/**", "/mobile", "/mobile/**").permitAll() // 정적 파일 및 /mobile
 
                         // 그 외 기본 경로는 인증 필요
                         .requestMatchers("/" + apiPathConfig.getBasePath() + "/**").authenticated()
