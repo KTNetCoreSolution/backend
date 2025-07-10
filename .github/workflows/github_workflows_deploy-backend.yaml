@@ -234,7 +234,7 @@ jobs:
           $baseDir = "D:\workspace\netcore"
           $sourceDir = "$baseDir\source\backend\build\libs"
           $deployDir = "$baseDir\deploy\backend"
-          $envFilePath = "$baseDir\source\backend\.env"
+          #$envFilePath = "$baseDir\source\backend\.env"
       
           Write-Output "📂 Deploying built JAR files to deployment directory..."
       
@@ -261,13 +261,13 @@ jobs:
           Copy-Item -Path $jarFile -Destination $deployDir -Force
       
           # .env 파일 복사
-          if (Test-Path -Path $envFilePath) {
-              Write-Output "📦 Copying .env file to deployment directory..."
-              Copy-Item -Path $envFilePath -Destination $deployDir -Force
-              Write-Output "✅ .env file successfully copied to: $deployDir"
-          } else {
-              Write-Warning "⚠️ .env file not found at: $envFilePath. Skipping .env file copy."
-          }
+          #if (Test-Path -Path $envFilePath) {
+          #    Write-Output "📦 Copying .env file to deployment directory..."
+          #    Copy-Item -Path $envFilePath -Destination $deployDir -Force
+          #    Write-Output "✅ .env file successfully copied to: $deployDir"
+          #} else {
+          #    Write-Warning "⚠️ .env file not found at: $envFilePath. Skipping .env file copy."
+          #}
       
           Write-Output "✅ Build files successfully deployed to: $deployDir"
 
