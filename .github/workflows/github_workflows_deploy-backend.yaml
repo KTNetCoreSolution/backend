@@ -204,6 +204,8 @@ jobs:
           $sourceDir = "$baseDir\source\backend\build\libs"
           $deployDir = "$baseDir\deploy\backend"
       
+          Write-Output "📂 Deploying built JAR files to deployment directory..."
+      
           # 실행 가능한 JAR 파일 검색 (plain 제외)
           $jarFile = (Get-ChildItem -Path $sourceDir -Filter '*.jar' | Where-Object { $_.Name -notlike '*-plain.jar' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
       
@@ -212,14 +214,21 @@ jobs:
               exit 1
           }
       
-          if (!(Test-Path -Path $deployDir)) {
+          # 기존 배포 파일 삭제
+          if (Test-Path -Path $deployDir) {
+              Write-Output "⚠️ Clearing existing files in: $deployDir"
+              Get-ChildItem -Path $deployDir -Recurse | Remove-Item -Recurse -Force
+          } else {
+              # 배포 디렉터리가 없으면 생성
               New-Item -ItemType Directory -Path $deployDir -Force
               Write-Output "✅ Deploy directory created at: $deployDir"
           }
       
           # JAR 파일 복사
+          Write-Output "📦 Copying built JAR to deployment directory..."
           Copy-Item -Path $jarFile -Destination $deployDir -Force
-          Write-Output "✅ Executable JAR copied to: $deployDir"
+      
+          Write-Output "✅ Build files successfully deployed to: $deployDir"
           
 
       ### 10. 기존 서비스 재시작
