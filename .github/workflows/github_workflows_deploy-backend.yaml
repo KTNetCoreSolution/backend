@@ -26,14 +26,16 @@ jobs:
       - name: Backup Current Source Code
         shell: powershell
         run: |
-          # 백업 관련 함수 정의
+          ### 백업 관련 함수 정의
+      - name: Backup Current Source
+        shell: powershell
+        run: |
           function Backup-Files {
-              param([string]$SourcePath, [string]$BackupPath)
+              param([string]$SourcePath, [string]$BackupPath, [bool]$HandleLockedFiles = $false)
       
               # 백업 대상 디렉터리 (월별 디렉터리) 생성
               $currentMonthDir = Join-Path -Path $BackupPath -ChildPath (Get-Date -Format 'yyyyMM')
               if (-not (Test-Path -Path $currentMonthDir)) {
-                  Write-Output "📂 Creating backup directory: $currentMonthDir"
                   New-Item -ItemType Directory -Path $currentMonthDir -Force
               }
       
@@ -41,24 +43,53 @@ jobs:
               $currentTime = "$(Get-Date -Format 'yyyyMMdd-HHmmss').zip"
               $backupFilePath = Join-Path -Path $currentMonthDir -ChildPath $currentTime
       
-              # 압축 생성 (모든 파일 / 폴더 포함)
-              Write-Output "🔄 Compressing source files to $backupFilePath..."
-              Compress-Archive -Path "$SourcePath\*" -DestinationPath $backupFilePath -Force
+              # 잠긴 파일을 처리하기 위해 복사본 생성
+              if ($HandleLockedFiles -eq $true) {
+                  # 임시 디렉터리 생성
+                  $tempDir = Join-Path -Path $env:TEMP -ChildPath "BackupTemp"
+                  if (Test-Path $tempDir) {
+                      Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+                  }
+                  New-Item -ItemType Directory -Path $tempDir -Force
+      
+                  # 파일 복사: 사용 중인 파일은 복사가 가능하지만 직접 압축은 불가함
+                  Get-ChildItem -Path $SourcePath -Recurse -Force | ForEach-Object {
+                      $destinationPath = Join-Path -Path $tempDir -ChildPath ($_.FullName.Substring($SourcePath.Length).TrimStart('\'))
+                      $destinationDir = Split-Path -Path $destinationPath -Parent
+                      if (-not (Test-Path -Path $destinationDir)) {
+                          New-Item -ItemType Directory -Path $destinationDir -Force
+                      }
+      
+                      try {
+                          Copy-Item -Path $_.FullName -Destination $destinationPath -Recurse -Force -ErrorAction Stop
+                      } catch {
+                          # 복사 실패(잠긴 파일 등) 로그 출력
+                          Write-Output "⚠️ Locked file skipped: $($_.FullName)"
+                      }
+                  }
+      
+                  # 임시 디렉터리 압축
+                  Compress-Archive -Path "$tempDir\*" -DestinationPath $backupFilePath -Force
+      
+                  # 임시 디렉터리 제거
+                  Remove-Item -Path $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+              } else {
+                  # 일반 압축 (사용 중인 파일은 제외, 접근 가능한 파일만 처리)
+                  Compress-Archive -Path "$SourcePath\*" -DestinationPath $backupFilePath -Force
+              }
       
               Write-Output "✅ Backup completed at $backupFilePath"
           }
       
-          # 경로 정의
-          $baseDir = 'D:\workspace\netcore'
-          $sourceDir = "$baseDir\source\backend"          # 백엔드 소스 코드 디렉터리
-          $deployDir = "$baseDir\deploy\backend"          # 배포 디렉터리
-          $sourceBackupDir = "$baseDir\backup\source\backend"  # 소스 코드 백업 디렉터리
-          $deployBackupDir = "$baseDir\backup\deploy\backend"  # 배포 파일 백업 디렉터리
+          # 변수 정의
+          $baseDir = "D:\workspace\netcore"
+          $sourcePath = "$baseDir\source\backend"
+          $backupPath = "$baseDir\backup\source\backend"
+          $deployPath = "$baseDir\deploy\backend"
       
-          # 소스 코드 백업
-          Backup-Files -SourcePath $sourceDir -BackupPath $sourceBackupDir
-          # 배포 파일 백업
-          Backup-Files -SourcePath $deployDir -BackupPath $deployBackupDir
+          # 백업 처리
+          Backup-Files -SourcePath $sourcePath -BackupPath $backupPath -HandleLockedFiles $true
+          Backup-Files -SourcePath $deployPath -BackupPath $backupPath -HandleLockedFiles $true
 
       ### 3. 최신 소스 코드 가져오기
       - name: Checkout Source Code
