@@ -10,12 +10,12 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 로그 생성 경로와 파일 이름 설정 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 날짜별 폴더와 파일 생성 -->
-            <fileNamePattern>logs/%d{yyyyMMdd}/app_%d{yyyyMMdd}.log</fileNamePattern>
+            <!-- 년월 별 폴더와, 일별 파일명 생성 (logs/년월/app_년월일.log) -->
+            <fileNamePattern>logs/%d{yyyyMM}/app_%d{yyyyMMdd}.log</fileNamePattern>
             <!-- 로그 보관 기간: 7일 -->
             <maxHistory>7</maxHistory>
             <!-- 전체 로그 크기 제한 -->
-            <totalSizeCap>50MB</totalSizeCap>
+            <totalSizeCap>100MB</totalSizeCap>
         </rollingPolicy>
 
         <!-- 로그 메시지 출력 포맷 -->
