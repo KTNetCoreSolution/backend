@@ -13,6 +13,10 @@ java {
 	}
 }
 
+bootRun {
+	jvmArgs = ['-Xms2g', '-Xmx4g', '-XX:+UseG1GC']
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
