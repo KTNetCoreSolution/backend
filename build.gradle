@@ -13,6 +13,10 @@ java {
 	}
 }
 
+bootRun {
+	jvmArgs = ['-Xms2g', '-Xmx4g', '-XX:+UseG1GC']
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -74,6 +78,9 @@ dependencies {
 	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
 	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
 	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
+	// Apache Commons Lang
+	implementation 'org.apache.commons:commons-lang3:3.17.0'
 
 	// Apache POI 의존성 추가
 	implementation "org.apache.poi:poi:${apachePoiVersion}"

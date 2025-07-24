@@ -12,6 +12,7 @@ import com.boot.ktn.util.ResponseEntityUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -46,12 +47,20 @@ public class LoginController {
     @PostMapping("login")
     public ResponseEntity<ApiResponseDto<Map<String, Object>>> login(
             @RequestBody Map<String, String> request,
-            HttpServletResponse response) {
+            HttpServletResponse response,
+            HttpSession session) {
         String empNo = request.get("empNo");
         String empPwd = request.get("empPwd");
+        String captchaInput = request.get("captchaInput");
 
-        if (empNo == null || empPwd == null) {
-            return responseEntityUtil.okBodyEntity(null, "01", "아이디와 비밀번호는 필수입니다.");
+        if (empNo == null || empPwd == null || captchaInput == null) {
+            return responseEntityUtil.okBodyEntity(null, "01", "아이디, 비밀번호, 캡챠는 필수입니다.");
+        }
+
+        // Verify CAPTCHA
+        String captchaText = (String) session.getAttribute("captchaText");
+        if (!captchaInput.equalsIgnoreCase(captchaText)) {
+            return responseEntityUtil.okBodyEntity(null, "01", "캡챠가 일치하지 않습니다.");
         }
 
         try {

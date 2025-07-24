@@ -70,7 +70,9 @@ public class SecurityConfig {
                         // 인증(auth) 경로 중 로그인(/login), 로그아웃(/logout), 상태 확인(/check)은 허용
                         .requestMatchers("/" + apiPathConfig.getAuthPath() + "/login",
                                 "/" + apiPathConfig.getAuthPath() + "/logout",
-                                "/" + apiPathConfig.getAuthPath() + "/check").permitAll()
+                                "/" + apiPathConfig.getAuthPath() + "/check",
+                                "/" + apiPathConfig.getAuthPath() + "/password/**",
+                                "/" + apiPathConfig.getAuthPath() + "/captcha").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/mobile", "/mobile/**", "/404.html").permitAll()
 
                         // 그 외 기본 경로는 인증 필요
