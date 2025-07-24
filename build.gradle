@@ -79,6 +79,9 @@ dependencies {
 	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
 	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 
+	// Apache Commons Lang
+	implementation 'org.apache.commons:commons-lang3:3.17.0'
+
 	// Apache POI 의존성 추가
 	implementation "org.apache.poi:poi:${apachePoiVersion}"
 	implementation "org.apache.poi:poi-ooxml:${apachePoiVersion}" // XLSX 포맷 지원
