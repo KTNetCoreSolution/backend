@@ -71,6 +71,8 @@ public class SecurityConfig {
                         .requestMatchers("/" + apiPathConfig.getAuthPath() + "/login",
                                 "/" + apiPathConfig.getAuthPath() + "/logout",
                                 "/" + apiPathConfig.getAuthPath() + "/check",
+                                "/" + apiPathConfig.getAuthPath() + "/password/list",
+                                "/" + apiPathConfig.getAuthPath() + "/password/save",
                                 "/" + apiPathConfig.getAuthPath() + "/captcha").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/mobile", "/mobile/**", "/404.html").permitAll()
 
