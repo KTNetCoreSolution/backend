@@ -18,12 +18,14 @@ public class ClientIPAspect {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
+        } else {
+            // 콤마(,)로 구분된 경우 첫 번째 값만 추출
+            ip = ip.split(",")[0].trim();
         }
-        // Convert IPv6 loopback address to IPv4 equivalent
+        // IPv6 루프백 주소 처리
         if ("0:0:0:0:0:0:0:1".equals(ip)) {
             ip = "127.0.0.1";
         }
-
         return ip;
     }
 }
