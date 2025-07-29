@@ -20,22 +20,18 @@ public class AuthMenuService {
             return Collections.emptyList();
         }
 
+        System.out.println(menuEntities);
+
         // 트리 구조로 변환
         return convertToMenuTree(menuEntities);
     }
 
     private List<Map<String, Object>> convertToMenuTree(List<AuthMenuEntity> menuEntities) {
-        // menuId를 키로 하는 맵 생성
-        Map<String, AuthMenuEntity> menuMap = menuEntities.stream()
-                .collect(Collectors.toMap(AuthMenuEntity::getMenuId, menu -> menu));
-
-        // 노드 맵: menuId -> Map<String, Object>
+        // menuId -> node 맵
         Map<String, Map<String, Object>> nodeMap = new HashMap<>();
+        Map<String, Integer> orderMap = new HashMap<>(); // 정렬용 별도 맵
 
-        // 트리 구조를 저장할 리스트 (최상위 노드)
-        List<Map<String, Object>> tree = new ArrayList<>();
-
-        // 각 메뉴를 노드로 변환
+        // 1. 모든 메뉴를 노드로 변환
         for (AuthMenuEntity menu : menuEntities) {
             Map<String, Object> node = new LinkedHashMap<>();
             node.put("MENUID", menu.getMenuId());
@@ -44,62 +40,52 @@ public class AuthMenuService {
             node.put("children", new ArrayList<Map<String, Object>>());
             nodeMap.put(menu.getMenuId(), node);
 
-            // 최상위 메뉴 (MENULEVEL=1 또는 upperMenuId 없음)
+            // menuOrder 변환 (null 또는 비숫자일 경우 0으로 처리)
+            int order = 0;
+            try {
+                if (menu.getMenuOrder() != null) {
+                    order = Integer.parseInt(menu.getMenuOrder().toString());
+                }
+            } catch (NumberFormatException e) {
+                order = 0;
+            }
+            orderMap.put(menu.getMenuId(), order);
+        }
+
+        // 최상위 메뉴 리스트
+        List<Map<String, Object>> tree = new ArrayList<>();
+
+        // 2. 부모-자식 관계 연결
+        for (AuthMenuEntity menu : menuEntities) {
+            Map<String, Object> currentNode = nodeMap.get(menu.getMenuId());
             if (menu.getUpperMenuId() == null || menu.getUpperMenuId().isEmpty()) {
-                tree.add(node);
+                tree.add(currentNode);
             } else {
-                // 상위 메뉴의 children에 추가
                 Map<String, Object> parentNode = nodeMap.get(menu.getUpperMenuId());
                 if (parentNode != null) {
-                    ((List<Map<String, Object>>) parentNode.get("children")).add(node);
-                } else {
-                    // 부모가 아직 처리되지 않은 경우, 임시로 트리에 추가 (후에 제거 가능)
-                    tree.add(node);
+                    ((List<Map<String, Object>>) parentNode.get("children")).add(currentNode);
                 }
             }
         }
 
-        // menuOrder 기준으로 정렬
-        tree.sort(Comparator.comparing(n -> {
-            String menuId = menuEntities.stream()
-                    .filter(m -> m.getMenuNm().equals(n.get("MENUNM")))
-                    .findFirst()
-                    .map(AuthMenuEntity::getMenuId)
-                    .orElse("");
-            return menuMap.get(menuId).getMenuOrder();
-        }));
-
-        // 각 노드의 children 정렬
-        nodeMap.values().forEach(node -> {
-            List<Map<String, Object>> children = (List<Map<String, Object>>) node.get("children");
-            children.sort(Comparator.comparing(n -> {
-                String menuId = menuEntities.stream()
-                        .filter(m -> m.getMenuNm().equals(n.get("MENUNM")))
-                        .findFirst()
-                        .map(AuthMenuEntity::getMenuId)
-                        .orElse("");
-                return menuMap.get(menuId).getMenuOrder();
-            }));
-        });
-
-        // 빈 children 제거 및 유효하지 않은 노드 제거
-        tree.removeIf(node -> {
-            String menuId = menuEntities.stream()
-                    .filter(m -> m.getMenuNm().equals(node.get("MENUNM")))
-                    .findFirst()
-                    .map(AuthMenuEntity::getMenuId)
-                    .orElse("");
-            AuthMenuEntity entity = menuMap.get(menuId);
-            return entity.getUpperMenuId() != null && !entity.getUpperMenuId().isEmpty();
-        });
-
-        nodeMap.values().forEach(node -> {
-            List<?> children = (List<?>) node.get("children");
-            if (children.isEmpty()) {
-                node.remove("children");
-            }
-        });
+        // 3. 정렬 재귀 적용
+        sortMenuList(tree, orderMap);
 
         return tree;
     }
+
+    @SuppressWarnings("unchecked")
+    private void sortMenuList(List<Map<String, Object>> menuList, Map<String, Integer> orderMap) {
+        // menuOrder 기준 정렬
+        menuList.sort(Comparator.comparingInt(m -> orderMap.getOrDefault((String) m.get("MENUID"), 0)));
+
+        // children 재귀 정렬
+        for (Map<String, Object> menu : menuList) {
+            List<Map<String, Object>> children = (List<Map<String, Object>>) menu.get("children");
+            if (children != null && !children.isEmpty()) {
+                sortMenuList(children, orderMap);
+            }
+        }
+    }
+
 }
