@@ -26,7 +26,7 @@ public class CaptchaController {
         session.setAttribute("captchaText", captchaText);
 
         // Create CAPTCHA image
-        int width = 150;
+        int width = 250;
         int height = 50;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = image.createGraphics();
@@ -46,10 +46,19 @@ public class CaptchaController {
             g2d.drawLine(x1, y1, x2, y2);
         }
 
-        // Draw CAPTCHA text
+        // Draw CAPTCHA text with adjusted spacing
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Arial", Font.BOLD, 30));
-        g2d.drawString(captchaText, 20, 35);
+        g2d.setFont(new Font("Arial", Font.BOLD, 42)); // Slightly larger font size
+        int charWidth = 30; // Approximate width per character
+        int spacing = 5; // Additional spacing between characters
+        int totalTextWidth = 6 * charWidth + 5 * spacing; // 6 characters + 5 gaps
+        int startX = (width - totalTextWidth) / 2; // Center horizontally
+        int startY = (height + 42) / 2 - 5; // Center vertically, slight upward adjustment
+
+        // Draw each character individually with spacing
+        for (int i = 0; i < captchaText.length(); i++) {
+            g2d.drawString(String.valueOf(captchaText.charAt(i)), startX + i * (charWidth + spacing), startY);
+        }
 
         g2d.dispose();
 
