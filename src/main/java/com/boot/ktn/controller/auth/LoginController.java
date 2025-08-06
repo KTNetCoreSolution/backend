@@ -92,6 +92,8 @@ public class LoginController {
                 userInfo.put("auth", loginEntity.getAuth());
                 userInfo.put("orgCd", loginEntity.getOrgCd());
                 userInfo.put("orgNm", loginEntity.getOrgNm());
+                userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
+                userInfo.put("carOrgNm", loginEntity.getCarOrgNm());
                 userInfo.put("pwdChgYn", loginEntity.getPwdChgYn());
                 userInfo.put("ip", clientIP);
 
