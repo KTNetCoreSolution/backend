@@ -142,9 +142,24 @@ public class ExcelUploadService {
             Sheet sheet = workbook.getSheetAt(0);
             int endRowNum = sheet.getPhysicalNumberOfRows();
 
+            for (int rowNum = endRowNum; rowNum >= 0; rowNum--) {
+                Row chkRow  = sheet.getRow(rowNum - 1);
+                if (chkRow != null) {
+                    Cell cell = chkRow.getCell(0, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                    String cellValue = formatCellValue(cell, DATE_FORMATTER, TIME_FORMATTER);
+                    if (cellValue.isEmpty()) {
+                        endRowNum--;    //유효한 endRowNum로 재설정
+                    }
+                    else {
+                        endRowNum = rowNum;
+                        break;
+                    }
+                }
+            }
+
             // 실제 데이터가 있는 컬럼 수 계산 (헤더 행 기준)
             int endColNum = 0;
-            Row headerRow = sheet.getRow(tableInfo.getStartRow() - 1);
+            Row headerRow = sheet.getRow(tableInfo.getStartRow() - 2);
             if (headerRow != null) {
                 for (int colNum = 0; colNum < headerRow.getLastCellNum(); colNum++) {
                     Cell cell = headerRow.getCell(colNum, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
