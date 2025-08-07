@@ -20,8 +20,6 @@ public class AuthMenuService {
             return Collections.emptyList();
         }
 
-        System.out.println(menuEntities);
-
         // 트리 구조로 변환
         return convertToMenuTree(menuEntities);
     }
