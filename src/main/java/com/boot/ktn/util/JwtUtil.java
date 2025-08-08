@@ -1,3 +1,4 @@
+// JwtUtil.java
 package com.boot.ktn.util;
 
 import io.jsonwebtoken.Claims;
@@ -8,7 +9,6 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +30,14 @@ public class JwtUtil {
 
     @Value("${COOKIE_SAMESITE:Lax}")
     private String cookieSameSite;
+
+    public boolean getCookieSecure() {
+        return cookieSecure;
+    }
+    
+    public String getCookieSameSite() {
+        return cookieSameSite;
+    }
 
     @Setter
     @Getter
@@ -98,9 +106,9 @@ public class JwtUtil {
         Cookie jwtCookie = new Cookie("jwt_token", token);
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(token == null ? 0 : (int) (expirationTime / 1000));
-        jwtCookie.setSecure(cookieSecure); // Set to true in production (HTTPS)
+        jwtCookie.setSecure(cookieSecure);
         jwtCookie.setAttribute("SameSite", cookieSameSite); // Required for cross-origin
+        jwtCookie.setMaxAge(-1); // 세션 쿠키로 설정
         return jwtCookie;
     }
 

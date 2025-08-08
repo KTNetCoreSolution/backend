@@ -1,3 +1,4 @@
+// AuthController.java
 package com.boot.ktn.controller.auth;
 
 import com.boot.ktn.aspect.ClientIPAspect;
@@ -39,10 +40,17 @@ public class AuthController {
 
     @CommonApiResponses
     @GetMapping("/check")
-    public ResponseEntity<ApiResponseDto<Map<String, Object>>> check(HttpServletRequest request) {
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> check(HttpServletRequest request, HttpServletResponse response) {
         String token = jwtUtil.getTokenFromCookie(request);
 
         if (token == null) {
+            Cookie jwtCookie = new Cookie("jwt_token", null);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(0);
+            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
+            response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity("Missing token", 401);
         }
 
@@ -50,11 +58,23 @@ public class AuthController {
             Claims claims = jwtUtil.validateToken(token);
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("success", true);
+            responseData.put("empNo", claims.getSubject());
+            responseData.put("empNm", claims.get("empNm"));
+            responseData.put("auth", claims.get("auth"));
+            responseData.put("orgCd", claims.get("orgCd"));
+            responseData.put("orgNm", claims.get("orgNm"));
+            responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
             return responseEntityUtil.okBodyEntity(responseData);
         } catch (Exception e) {
             errorMessage = "Token validation failed in /api/auth/check: ";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
-            System.out.println(this.getErrorMessage() + e.getMessage());
+            Cookie jwtCookie = new Cookie("jwt_token", null);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(0);
+            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
+            response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 401);
         }
     }
@@ -67,6 +87,13 @@ public class AuthController {
             @RequestParam(value = "extend", defaultValue = "false") boolean extend) {
         String token = jwtUtil.getTokenFromCookie(request);
         if (token == null) {
+            Cookie jwtCookie = new Cookie("jwt_token", null);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(0);
+            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
+            response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity("Missing token", 401);
         }
 
@@ -108,6 +135,13 @@ public class AuthController {
         } catch (Exception e) {
             errorMessage = "Invalid token: ";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
+            Cookie jwtCookie = new Cookie("jwt_token", null);
+            jwtCookie.setHttpOnly(true);
+            jwtCookie.setPath("/");
+            jwtCookie.setMaxAge(0);
+            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
+            response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 401);
         }
     }
@@ -115,8 +149,12 @@ public class AuthController {
     @CommonApiResponses
     @PostMapping("/logout")
     public ResponseEntity<ApiResponseDto<Map<String, Object>>> logout(HttpServletResponse response) {
-        Cookie jwtCookie = jwtUtil.createJwtCookie(null);
+        Cookie jwtCookie = new Cookie("jwt_token", null);
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
+        jwtCookie.setSecure(jwtUtil.getCookieSecure());
+        jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
         response.addCookie(jwtCookie);
 
         Map<String, Object> responseData = new HashMap<>();
