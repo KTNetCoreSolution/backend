@@ -18,7 +18,9 @@ public class EscapeUtil {
                 .replace("\"", "˝")  // 이중 인용부호 → 유니코드
                 .replace(";", "⁏")  // 세미콜론 → 유니코드
                 .replace("\\", "∖") // 백슬래시 → 유니코드
-                .replace("--", "—"); // SQL 주석 기호 "--" → 대체
+                .replace("--", "—") // SQL 주석 기호 "--" → 대체
+                .replace("(", "（")  // LEFT PARENTHESIS → 대체
+                .replace(")", "）"); // RIGHT PARENTHESIS → 대체
     }
 
     /**
@@ -34,6 +36,8 @@ public class EscapeUtil {
                 .replace("˝", "\"")  // 유니코드 → 이중 인용부호
                 .replace("⁏", ";")  // 유니코드 → 세미콜론
                 .replace("∖", "\\") // 유니코드 → 백슬래시
-                .replace("—", "--"); // 대체 → SQL 주석 기호 "--"
+                .replace("—", "--") // 대체 → SQL 주석 기호 "--"
+                .replace("（", "(")  // 대체 → LEFT PARENTHESIS
+                .replace("）", ")"); // 대체 → RIGHT PARENTHESIS
     }
 }
