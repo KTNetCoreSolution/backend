@@ -19,6 +19,8 @@ public interface LoginMapper {
           ISNULL(fixorg.NAME, '') AS carOrgNm,
           ISNULL(car.CARMNGORGCD, '') AS carMngOrgCd,
           ISNULL(car.CARMNGORGNM, '') AS carMngOrgNm,
+          ISNULL(st.SECTIONCD, '') AS standardSectionCd,
+          ISNULL(st.SECTIONNM, '') AS standardSectionNm,
           ISNULL(a.PWDCHGYN, '') AS pwdChgYn
         FROM tb_userinfo a
         LEFT JOIN tb_userauthgroup b ON a.EMPNO = b.EMPNO
@@ -35,6 +37,7 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
+        LEFT JOIN tb_standardactivity_usersection st ON a.EMPNO = st.EMPNO
         WHERE a.EMPNO = #{empNo}
         AND a.EMPPWD = #{empPw}
     """)
@@ -52,6 +55,8 @@ public interface LoginMapper {
           ISNULL(fixorg.NAME, '') AS carOrgNm,
           ISNULL(car.CARMNGORGCD, '') AS carMngOrgCd,
           ISNULL(car.CARMNGORGNM, '') AS carMngOrgNm,
+          ISNULL(st.SECTIONCD, '') AS standardSectionCd,
+          ISNULL(st.SECTIONNM, '') AS standardSectionNm,
           ISNULL(a.PWDCHGYN, '') AS pwdChgYn
         FROM tb_userinfo a
         LEFT JOIN tb_userauthgroup b ON a.EMPNO = b.EMPNO
@@ -68,6 +73,7 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
+        LEFT JOIN tb_standardactivity_usersection st ON a.EMPNO = st.EMPNO
         WHERE a.EMPNO = #{empNo}
     """)
     LoginEntity loginCheckManager(@Param("empNo") String empNo);

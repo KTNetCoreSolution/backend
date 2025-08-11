@@ -14,6 +14,8 @@ public class LoginEntity {
     private String carOrgNm;
     private String carMngOrgNm;
     private String carMngOrgCd;
+    private String standardSectionCd;
+    private String standardSectionNm;
     private String pwdChgYn;
     private String clientIP;
 }
