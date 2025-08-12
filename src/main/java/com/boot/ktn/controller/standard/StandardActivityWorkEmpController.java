@@ -2,7 +2,6 @@ package com.boot.ktn.controller.standard;
 
 import com.boot.ktn.config.AppConfig;
 import com.boot.ktn.dto.common.ApiResponseDto;
-import com.boot.ktn.entity.mapview.MapViewFileEntity;
 import com.boot.ktn.service.mapview.MapViewFileProcessor;
 import com.boot.ktn.service.mapview.MapViewProcessor;
 import com.boot.ktn.util.CommonApiResponses;
@@ -21,18 +20,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("${api.base.path}/standard")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "4.표준활동 > 공통관리", description = "공통을 관리하는 API")
-public class StandardCommonController {
-    private static final Logger logger = LoggerFactory.getLogger(StandardCommonController.class);
+@io.swagger.v3.oas.annotations.tags.Tag(name = "4.표준활동 > 개별업무관리", description = "개별업무를 관리하는 API")
+public class StandardActivityWorkEmpController {
+    private static final Logger logger = LoggerFactory.getLogger(StandardActivityWorkEmpController.class);
 
     private final ResponseEntityUtil responseEntityUtil;
     private final MapViewProcessor mapViewProcessor;
@@ -46,42 +43,12 @@ public class StandardCommonController {
     String errorMessage;
 
     @CommonApiResponses
-    @PostMapping("/classinfoList")
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> classinfoList(
+    @PostMapping("/empJob/list")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> List(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "STANDARDACTIVITYCLASSINFO";
-        String jobGb = "GET";
-
-        Claims claims = (Claims) httpRequest.getAttribute("user");
-        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
-
-        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
-
-        List<Map<String, Object>> unescapedResultList;
-        try {
-            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
-        } catch (IllegalArgumentException e) {
-            errorMessage = "/list unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
-            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
-        }
-
-        if (unescapedResultList.isEmpty()) {
-            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
-        }
-
-        return responseEntityUtil.okBodyEntity(unescapedResultList);
-    }
-
-    @CommonApiResponses
-    @PostMapping("/ddlList")
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> ddlList(
-            @RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest
-    ) {
-        String rptCd = "STANDARDACTIVITYDDL";
+        String rptCd = "STANDARDACTIVITYWORKEMP";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
