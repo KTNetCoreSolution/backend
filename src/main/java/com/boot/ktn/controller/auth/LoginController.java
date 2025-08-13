@@ -116,4 +116,70 @@ public class LoginController {
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 500);
         }
     }
+
+    @CommonApiResponses
+    @PostMapping("sso/login")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> ssoLogin(
+            @RequestBody Map<String, String> request,
+            HttpServletResponse response,
+            HttpSession session) {
+        String empNo = request.get("empNo");
+
+        if (empNo == null) {
+            return responseEntityUtil.okBodyEntity(null, "01", "아이디는 필수입니다.");
+        }
+
+        try {
+            LoginEntity loginEntity = loginService.ssoLoginCheck(empNo);
+
+            if (loginEntity != null) {
+                String clientIP = ClientIPAspect.getClientIP();
+                loginEntity.setClientIP(clientIP);
+                String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm());
+                Claims claims = jwtUtil.validateToken(token);
+
+                // Set HTTP-only cookie
+                Cookie jwtCookie = jwtUtil.createJwtCookie(token);
+                response.addCookie(jwtCookie);
+
+                // loginResultService call
+                Map<String, Object> procedureResult = loginResultService.callLoginProcedure(empNo, clientIP);
+                LoginResultEntity loginResult = new LoginResultEntity();
+                loginResult.setErrCd((String) procedureResult.get("errCd"));
+                loginResult.setErrMsg((String) procedureResult.get("errMsg"));
+
+                if (!"00".equals(loginResult.getErrCd())) {
+                    return responseEntityUtil.okBodyEntity(null, "01", "로그인 프로시저 처리 실패: " + loginResult.getErrMsg());
+                }
+
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("empNo", loginEntity.getEmpNo());
+                userInfo.put("empNm", loginEntity.getEmpNm());
+                userInfo.put("auth", loginEntity.getAuth());
+                userInfo.put("orgCd", loginEntity.getOrgCd());
+                userInfo.put("orgNm", loginEntity.getOrgNm());
+                userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
+                userInfo.put("carOrgNm", loginEntity.getCarOrgNm());
+                userInfo.put("carMngOrgCd", loginEntity.getCarMngOrgCd());
+                userInfo.put("carMngOrgNm", loginEntity.getCarMngOrgNm());
+                userInfo.put("standardSectionCd", loginEntity.getStandardSectionCd());
+                userInfo.put("standardSectionNm", loginEntity.getStandardSectionNm());
+                userInfo.put("pwdChgYn", loginEntity.getPwdChgYn());
+                userInfo.put("ip", clientIP);
+
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("user", userInfo);
+                responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
+
+                return responseEntityUtil.okBodyEntity(responseData);
+            } else {
+                return responseEntityUtil.okBodyEntity(null, "01", "아이디 또는 비밀번호가 잘못되었습니다.");
+            }
+        } catch (Exception e) {
+            errorMessage = "로그인 처리 중 오류 발생: ";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            System.out.println(this.getErrorMessage() + e.getMessage());
+            return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 500);
+        }
+    }
 }

@@ -27,4 +27,11 @@ public class LoginService {
 
         return user;
     }
+
+    public LoginEntity ssoLoginCheck(String empNo) {
+        LoginEntity user;
+        user = loginMapper.loginCheckManager(empNo);
+
+        return user;
+    }
 }
