@@ -37,7 +37,7 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
-        LEFT JOIN tb_standardactivity_usersection st ON a.EMPNO = st.EMPNO
+        LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
         AND a.EMPPWD = #{empPw}
     """)
@@ -73,7 +73,7 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
-        LEFT JOIN tb_standardactivity_usersection st ON a.EMPNO = st.EMPNO
+        LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
     """)
     LoginEntity loginCheckManager(@Param("empNo") String empNo);
