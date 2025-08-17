@@ -74,6 +74,7 @@ public class SecurityConfig {
                                 "/" + apiPathConfig.getAuthPath() + "/check",
                                 "/" + apiPathConfig.getAuthPath() + "/join/save",
                                 "/" + apiPathConfig.getAuthPath() + "/password/**",
+                                "/" + apiPathConfig.getBasePath() + "/ver/**",
                                 "/" + apiPathConfig.getAuthPath() + "/captcha").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/mobile", "/mobile/**", "/404.html").permitAll()
 
@@ -118,6 +119,7 @@ public class SecurityConfig {
     @NotNull
     private CorsConfiguration getCorsConfiguration() {
         CorsConfiguration configuration = new CorsConfiguration();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         String[] originsArray = allowedOrigins.split(",");
         System.out.println("allowedOrigins: " + String.join(", ", originsArray));
@@ -129,10 +131,13 @@ public class SecurityConfig {
             }
         }
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Swagger에서 authorization 읽기 가능하도록
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Client-Version"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Server-Version"));
+        //configuration.setExposedHeaders(Arrays.asList("Authorization")); // Swagger에서 authorization 읽기 가능하도록
         configuration.setAllowCredentials(true); // JWT 같은 인증 데이터를 허용
+
+        source.registerCorsConfiguration("/" + apiPathConfig.getBasePath() + "/ver/**", configuration);
 
         return configuration;
     }
