@@ -19,7 +19,7 @@ import java.util.Random;
 public class CaptchaController {
 
     // Generate CAPTCHA image
-    @GetMapping(value = "/captcha", produces = MediaType.IMAGE_PNG_VALUE)
+    @PostMapping(value = "/captcha", produces = MediaType.IMAGE_PNG_VALUE)
     public byte[] generateCaptcha(HttpSession session) throws Exception {
         // Generate random CAPTCHA text using commons-lang3
         String captchaText = RandomStringUtils.random(6, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
