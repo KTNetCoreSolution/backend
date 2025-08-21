@@ -44,7 +44,7 @@ public class StandardActivityWorkEmpController {
 
     @CommonApiResponses
     @PostMapping("/empJob/list")
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> List(
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> empJobList(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
@@ -67,6 +67,126 @@ public class StandardActivityWorkEmpController {
 
         if (unescapedResultList.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/empJob/common/reg/list")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> commonRegList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "STANDARDACTIVITYWORKEMPREG";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/list unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/empJob/common/reg/save")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> commonRegSave(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "STANDARDACTIVITYWORKEMPREGTRAN";
+        String jobGb = "SET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/save unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "결과 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/empJob/biz/reg/list")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> bizRegList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "STANDARDACTIVITYWORKEMPREGBIZ";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/list unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/empJob/biz/reg/save")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> bizRegSave(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "STANDARDACTIVITYWORKEMPREGBIZTRAN";
+        String jobGb = "SET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/save unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "결과 없습니다.");
         }
 
         return responseEntityUtil.okBodyEntity(unescapedResultList);
