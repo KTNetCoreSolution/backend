@@ -90,6 +90,7 @@ public class LoginController {
                 userInfo.put("empNo", loginEntity.getEmpNo());
                 userInfo.put("empNm", loginEntity.getEmpNm());
                 userInfo.put("auth", loginEntity.getAuth());
+                userInfo.put("levelCd", loginEntity.getLevelCd());
                 userInfo.put("orgCd", loginEntity.getOrgCd());
                 userInfo.put("orgNm", loginEntity.getOrgNm());
                 userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
@@ -156,6 +157,7 @@ public class LoginController {
                 userInfo.put("empNo", loginEntity.getEmpNo());
                 userInfo.put("empNm", loginEntity.getEmpNm());
                 userInfo.put("auth", loginEntity.getAuth());
+                userInfo.put("levelCd", loginEntity.getLevelCd());
                 userInfo.put("orgCd", loginEntity.getOrgCd());
                 userInfo.put("orgNm", loginEntity.getOrgNm());
                 userInfo.put("carOrgCd", loginEntity.getCarOrgCd());

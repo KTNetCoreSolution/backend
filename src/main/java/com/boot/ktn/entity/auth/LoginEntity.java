@@ -8,6 +8,7 @@ public class LoginEntity {
     private String empNm;
     private String empPwd;
     private String auth;
+    private String levelCd;
     private String orgCd;
     private String orgNm;
     private String carOrgCd;
