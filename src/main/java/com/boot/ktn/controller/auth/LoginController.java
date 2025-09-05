@@ -167,7 +167,7 @@ public class LoginController {
 
         // m-kate URL에 token 추가
         String getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
-                .queryParam("token", ssoTokenDecode)
+                .queryParam("token", ssoToken)
                 .toUriString();
 
         // HttpClient 생성 후 timeout 설정
@@ -189,7 +189,7 @@ public class LoginController {
         Map<String, Object> mKateResponse = null;
         try {
             mKateResponse = restTemplate.exchange(
-                    url,
+                    getUrl,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<Map<String, Object>>() {}
