@@ -134,14 +134,14 @@ public class LoginController {
             HttpServletResponse response,
             HttpSession session) {
         String ssoToken = request.get("ssoToken");
-        logger.debug("ssoToken: ", ssoToken);
+        logger.error("ssoToken: ", ssoToken);
 
         // ssoToken 검증 및 m-kate 서버 호출
         if (ssoToken == null || ssoToken.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
         }
 
-        logger.debug("mKateUrl: ", mKateUrl);
+        logger.error("mKateUrl: ", mKateUrl);
 
         if (mKateUrl == null || mKateUrl.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "MKATE_URL 설정이 필요합니다.");
@@ -180,12 +180,24 @@ public class LoginController {
                 logger.error("m-kate 응답 형식이 올바르지 않습니다.: resultObj={}", resultObj);
                 return responseEntityUtil.errBodyEntity("m-kate 응답 형식이 올바르지 않습니다.", 500);
             }
+
+            logger.error("resultObj: ", resultObj);
+
+
+
             @SuppressWarnings("unchecked")
             Map<String, Object> result = (Map<String, Object>) resultObj;
+
+            logger.error("result: ", result);
 
             String code = String.valueOf(result.get("code"));
             String errdesc = String.valueOf(result.get("errdesc"));
             String empNo = String.valueOf(mKateResponse.get("userid")); // userid를 empNo로 사용
+
+            logger.error("code: ", code);
+            logger.error("errdesc: ", errdesc);
+            logger.error("empNo: ", empNo);
+
 
             if (!"0".equals(code)) {
                 logger.error("m-kate 인증 실패: code={}, errdesc={}", code, errdesc);
