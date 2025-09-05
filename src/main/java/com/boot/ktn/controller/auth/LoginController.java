@@ -143,8 +143,9 @@ public class LoginController {
         String ssoToken = request.get("token");
         logger.error("ssoToken: " + ssoToken);
 
+        String ssoTokenDecode = null;
         try {
-            String ssoTokenDecode = URLDecoder.decode(ssoToken, StandardCharsets.UTF_8.toString());
+            ssoTokenDecode = URLDecoder.decode(ssoToken, StandardCharsets.UTF_8.toString());
             logger.error("decoded ssoToken: " + ssoTokenDecode);
         } catch (Exception e) {
             logger.error("토큰 디코딩 오류", e);
@@ -164,7 +165,7 @@ public class LoginController {
 
         // m-kate URL에 token 추가
         String getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
-                .queryParam("token", ssoToken)
+                .queryParam("token", ssoTokenDecode)
                 .toUriString();
 
         // HttpClient 생성 후 timeout 설정
