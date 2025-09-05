@@ -31,7 +31,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -174,10 +176,20 @@ public class LoginController {
         requestFactory.setReadTimeout(3000);    // 읽기 타임아웃 3초
         RestTemplate restTemplate = new RestTemplate(requestFactory);
 
+        String encodedToken = null;
+        try {
+            encodedToken = URLEncoder.encode(ssoToken, StandardCharsets.UTF_8.toString());
+
+            logger.error("encodedToken: " + encodedToken);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        String url = mKateUrl + "?token=" + encodedToken;
+
         Map<String, Object> mKateResponse = null;
         try {
             mKateResponse = restTemplate.exchange(
-                    getUrl,
+                    url,
                     HttpMethod.GET,
                     null,
                     new ParameterizedTypeReference<Map<String, Object>>() {}
