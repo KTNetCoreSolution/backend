@@ -144,6 +144,8 @@ public class LoginController {
 
         String ssoToken = null;
         if (ssoTokenRaw != null) {
+            ssoToken = ssoTokenRaw;
+            /*
             try {
                 ssoToken = URLDecoder.decode(ssoTokenRaw, StandardCharsets.UTF_8.toString());
                 logger.error("decoded ssoToken: " + ssoToken);
@@ -152,6 +154,7 @@ public class LoginController {
                 // 필요에 따라 예외 처리 또는 기본 raw 토큰 사용
                 ssoToken = ssoTokenRaw;
             }
+            */
         }
         // ssoToken 검증 및 m-kate 서버 호출
         if (ssoToken == null || ssoToken.isEmpty()) {
