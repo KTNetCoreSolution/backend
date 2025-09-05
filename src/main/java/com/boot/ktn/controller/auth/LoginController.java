@@ -29,6 +29,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -136,9 +139,20 @@ public class LoginController {
 
         logger.error("request: ", request);
 
-        String ssoToken = request.get("ssoToken");
-        logger.error("ssoToken: ", ssoToken);
+        String ssoTokenRaw = request.get("token");
+        logger.error("raw ssoToken: " + ssoTokenRaw);
 
+        String ssoToken = null;
+        if (ssoTokenRaw != null) {
+            try {
+                ssoToken = URLDecoder.decode(ssoTokenRaw, StandardCharsets.UTF_8.toString());
+                logger.error("decoded ssoToken: " + ssoToken);
+            } catch (Exception e) {
+                logger.error("토큰 디코딩 오류", e);
+                // 필요에 따라 예외 처리 또는 기본 raw 토큰 사용
+                ssoToken = ssoTokenRaw;
+            }
+        }
         // ssoToken 검증 및 m-kate 서버 호출
         if (ssoToken == null || ssoToken.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
