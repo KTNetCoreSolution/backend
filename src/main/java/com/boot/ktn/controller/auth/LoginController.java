@@ -133,6 +133,9 @@ public class LoginController {
             @NotNull @RequestBody Map<String, String> request,
             HttpServletResponse response,
             HttpSession session) {
+
+        logger.error("request: ", request);
+
         String ssoToken = request.get("ssoToken");
         logger.error("ssoToken: ", ssoToken);
 
