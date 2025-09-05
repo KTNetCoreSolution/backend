@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -142,6 +143,14 @@ public class LoginController {
         String ssoToken = request.get("token");
         logger.error("ssoToken: " + ssoToken);
 
+        try {
+            String ssoTokenDecode = URLDecoder.decode(ssoToken, StandardCharsets.UTF_8.toString());
+            logger.error("decoded ssoToken: " + ssoTokenDecode);
+        } catch (Exception e) {
+            logger.error("토큰 디코딩 오류", e);
+        }
+
+
         // ssoToken 검증 및 m-kate 서버 호출
         if (ssoToken == null || ssoToken.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
@@ -154,7 +163,9 @@ public class LoginController {
         }
 
         // m-kate URL에 token 추가
-        String getUrl = mKateUrl + "?token=" + ssoToken;
+        String getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
+                .queryParam("token", ssoToken)
+                .toUriString();
 
         // HttpClient 생성 후 timeout 설정
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
