@@ -4,6 +4,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import lombok.Getter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 public class AppConfig {
@@ -29,5 +30,10 @@ public class AppConfig {
         int maxResultSize = Integer.parseInt(dotenv.get("MAX_RESULT_SIZE", "300")); // Default to 300 records
         int maxFilesPerUpload = Integer.parseInt(dotenv.get("MAX_FILES_PER_UPLOAD", "10")); // Default to 10 files
         return new FileConfig(maxFileSize, maxResultSize, maxFilesPerUpload);
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }
