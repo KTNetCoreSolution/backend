@@ -11,6 +11,7 @@ import com.boot.ktn.util.JwtUtil;
 import com.boot.ktn.util.ResponseEntityUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.Getter;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -137,54 +139,56 @@ public class LoginController {
     @PostMapping("sso/login")
     public ResponseEntity<ApiResponseDto<Map<String, Object>>> ssoLogin(
             @NotNull @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest,
             HttpServletResponse response,
             HttpSession session) {
 
-        logger.error("request: ", request);
+        logger.debug("request: {}", request);
 
         String ssoToken = request.get("token");
-        logger.error("ssoToken: " + ssoToken);
+        String test = request.get("test");
+        logger.debug("ssoToken: {}", ssoToken);
+        logger.debug("test: {}", test);
 
-        String ssoTokenDecode = null;
-        try {
-            ssoTokenDecode = URLDecoder.decode(ssoToken, StandardCharsets.UTF_8.toString());
-            logger.error("decoded ssoToken: " + ssoTokenDecode);
-        } catch (Exception e) {
-            logger.error("토큰 디코딩 오류", e);
-        }
-
-
-        // ssoToken 검증 및 m-kate 서버 호출
         if (ssoToken == null || ssoToken.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
         }
 
-        logger.error("mKateUrl: " + mKateUrl);
-
-        if (mKateUrl == null || mKateUrl.isEmpty()) {
-            return responseEntityUtil.okBodyEntity(null, "01", "MKATE_URL 설정이 필요합니다.");
+        // test 파라미터 검증
+        if (test == null || !test.matches("^[YN]$")) {
+            logger.error("유효하지 않은 test 값: {}", test);
+            return responseEntityUtil.okBodyEntity(null, "01", "test 파라미터 값이 유효하지 않습니다.");
         }
 
-        // m-kate URL에 token 추가
-        String getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
+        // ssoToken을 URL 인코딩
+        /*
+        String encodedSsoToken;
+        try {
+            encodedSsoToken = URLEncoder.encode(ssoToken, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException e) {
+            logger.error("토큰 인코딩 실패: {}", e.getMessage());
+            return responseEntityUtil.errBodyEntity("토큰 인코딩 실패: " + e.getMessage(), 500);
+        }
+
+        URI getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
+                .queryParam("token", encodedSsoToken)
+                .encode()
+                .build(true)
+                .toUri();
+        */
+
+        URI getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
                 .queryParam("token", ssoToken)
-                .toUriString();
+                .build(true)
+                .toUri();
+
+        logger.debug("getUrl: {}", getUrl);
 
         // HttpClient 생성 후 timeout 설정
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(3000); // 연결 타임아웃 3초
-        requestFactory.setReadTimeout(3000);    // 읽기 타임아웃 3초
+        requestFactory.setConnectTimeout(3000);
+        requestFactory.setReadTimeout(3000);
         RestTemplate restTemplate = new RestTemplate(requestFactory);
-
-        String encodedToken = null;
-        try {
-            encodedToken = URLEncoder.encode(ssoToken, StandardCharsets.UTF_8.toString());
-
-            logger.error("encodedToken: " + encodedToken);
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        String url = mKateUrl + "?token=" + encodedToken;
 
         Map<String, Object> mKateResponse = null;
         try {
@@ -199,7 +203,7 @@ public class LoginController {
                 return responseEntityUtil.errBodyEntity("m-kate 응답이 없습니다.", 500);
             }
         } catch (Exception e) {
-            logger.error("HTTP 요청 중 오류 발생: " + e.getMessage());
+            logger.error("HTTP 요청 중 오류 발생: {}", e.getMessage());
             return responseEntityUtil.errBodyEntity("m-kate 요청 실패: " + e.getMessage(), 500);
         }
 
@@ -211,23 +215,16 @@ public class LoginController {
                 return responseEntityUtil.errBodyEntity("m-kate 응답 형식이 올바르지 않습니다.", 500);
             }
 
-            logger.error("resultObj: "+ resultObj);
-
-
-
             @SuppressWarnings("unchecked")
             Map<String, Object> result = (Map<String, Object>) resultObj;
 
-            logger.error("result: "+ result);
-
             String code = String.valueOf(result.get("code"));
             String errdesc = String.valueOf(result.get("errdesc"));
-            String empNo = String.valueOf(mKateResponse.get("userid")); // userid를 empNo로 사용
+            String empNo = String.valueOf(mKateResponse.get("userid"));
 
-            logger.error("code: "+ code);
-            logger.error("errdesc: "+ errdesc);
-            logger.error("empNo: "+ empNo);
-
+            logger.debug("code: {}", code);
+            logger.debug("errdesc: {}", errdesc);
+            logger.debug("empNo: {}", empNo);
 
             if (!"0".equals(code)) {
                 logger.error("m-kate 인증 실패: code={}, errdesc={}", code, errdesc);
@@ -286,9 +283,9 @@ public class LoginController {
             }
         } catch (Exception e) {
             errorMessage = "로그인 처리 중 오류 발생: ";
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
-            System.out.println(this.getErrorMessage() + e.getMessage());
-            return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 500);
+            logger.error(errorMessage, e.getMessage(), e);
+            System.out.println(errorMessage + e.getMessage());
+            return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
         }
     }
 }
