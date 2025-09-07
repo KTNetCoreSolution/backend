@@ -56,7 +56,7 @@ public class SSoMKateController {
         return new ResponseEntity<>(body, headers, status);
     }
 
-    @GetMapping("ssoMLogin")
+    @GetMapping("ssoMLoginTest")
     public ResponseEntity<Map<String, Object>> ssoLogin(
             @NotNull @RequestParam Map<String, String> request,
             HttpServletRequest httpRequest,

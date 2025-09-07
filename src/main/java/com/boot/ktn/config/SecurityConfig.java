@@ -70,7 +70,7 @@ public class SecurityConfig {
                         // 인증(auth) 경로 중 로그인(/login), 로그아웃(/logout), 상태 확인(/check)은 허용
                         .requestMatchers("/" + apiPathConfig.getAuthPath() + "/login",
                                 "/" + apiPathConfig.getAuthPath() + "/sso/**",
-                                "/mobile/ssoMLogin",
+                                "/mobile/ssoMLoginTest",
                                 "/" + apiPathConfig.getAuthPath() + "/logout",
                                 "/" + apiPathConfig.getAuthPath() + "/check",
                                 "/" + apiPathConfig.getAuthPath() + "/join/save",

@@ -67,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 path.equals(authPath + "/check") ||  // 인증 상태 확인
                 path.equals(authPath + "/logout") || // 로그아웃
                 path.equals(authPath + "/sso/**") || // sso로그인
-                path.equals("/mobile/ssoMLogin") || // sso로그인
+                path.equals("/mobile/ssoMLoginTest") || // sso로그인
                 path.startsWith(publicPath);  // 공용 경로(public)
 
         logger.debug("Filter Decision - method: {}, path: {}, shouldNotFilter: {}",
