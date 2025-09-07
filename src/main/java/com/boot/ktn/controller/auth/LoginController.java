@@ -84,46 +84,7 @@ public class LoginController {
             LoginEntity loginEntity = loginService.loginCheck(empNo, empPwd);
 
             if (loginEntity != null) {
-                String clientIP = ClientIPAspect.getClientIP();
-                loginEntity.setClientIP(clientIP);
-                String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm());
-                Claims claims = jwtUtil.validateToken(token);
-
-                // Set HTTP-only cookie
-                Cookie jwtCookie = jwtUtil.createJwtCookie(token);
-                response.addCookie(jwtCookie);
-
-                // loginResultService call
-                Map<String, Object> procedureResult = loginResultService.callLoginProcedure(empNo, clientIP);
-                LoginResultEntity loginResult = new LoginResultEntity();
-                loginResult.setErrCd((String) procedureResult.get("errCd"));
-                loginResult.setErrMsg((String) procedureResult.get("errMsg"));
-
-                if (!"00".equals(loginResult.getErrCd())) {
-                    return responseEntityUtil.okBodyEntity(null, "01", "로그인 프로시저 처리 실패: " + loginResult.getErrMsg());
-                }
-
-                Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("empNo", loginEntity.getEmpNo());
-                userInfo.put("empNm", loginEntity.getEmpNm());
-                userInfo.put("auth", loginEntity.getAuth());
-                userInfo.put("levelCd", loginEntity.getLevelCd());
-                userInfo.put("orgCd", loginEntity.getOrgCd());
-                userInfo.put("orgNm", loginEntity.getOrgNm());
-                userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
-                userInfo.put("carOrgNm", loginEntity.getCarOrgNm());
-                userInfo.put("carMngOrgCd", loginEntity.getCarMngOrgCd());
-                userInfo.put("carMngOrgNm", loginEntity.getCarMngOrgNm());
-                userInfo.put("standardSectionCd", loginEntity.getStandardSectionCd());
-                userInfo.put("standardSectionNm", loginEntity.getStandardSectionNm());
-                userInfo.put("pwdChgYn", loginEntity.getPwdChgYn());
-                userInfo.put("ip", clientIP);
-
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("user", userInfo);
-                responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
-
-                return responseEntityUtil.okBodyEntity(responseData);
+                return processLoginSuccess(loginEntity, response, empNo);
             } else {
                 return responseEntityUtil.okBodyEntity(null, "01", "아이디 또는 비밀번호가 잘못되었습니다.");
             }
@@ -132,6 +93,47 @@ public class LoginController {
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             System.out.println(this.getErrorMessage() + e.getMessage());
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 500);
+        }
+    }
+
+    @CommonApiResponses
+    @PostMapping("sso/login/check")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> ssoLoginCheck(
+            @NotNull @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response,
+            HttpSession session) {
+
+        logger.debug("request: {}", request);
+
+        String empNo = request.get("empNo");
+        String ssoCheck = request.get("ssoCheck");
+
+        logger.debug("empNo: {}", empNo);
+        logger.debug("ssoCheck: {}", ssoCheck);
+
+        if (empNo == null || empNo.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "empNo 파라미터 값이 유효하지 않습니다.");
+        }
+        // test 파라미터 검증
+        if (ssoCheck == null || !ssoCheck.matches("^[YN]$")) {
+            logger.error("유효하지 않은 ssoCheck 값: {}", ssoCheck);
+            return responseEntityUtil.okBodyEntity(null, "01", "ssoCheck 파라미터 값이 유효하지 않습니다.");
+        }
+
+        try {
+            LoginEntity loginEntity = loginService.ssoLoginCheck(empNo);
+
+            if (loginEntity != null) {
+                return processLoginSuccess(loginEntity, response, empNo);
+            } else {
+                return responseEntityUtil.okBodyEntity(null, "01", "아이디 또는 비밀번호가 잘못되었습니다.");
+            }
+        } catch (Exception e) {
+            errorMessage = "로그인 처리 중 오류 발생: ";
+            logger.error(errorMessage, e.getMessage(), e);
+            System.out.println(errorMessage + e.getMessage());
+            return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
         }
     }
 
@@ -180,7 +182,6 @@ public class LoginController {
                 .queryParam("token", ssoToken)
                 .build(true)
                 .toUri();
-
         */
 
         logger.debug("getUrl: {}", getUrl);
@@ -239,46 +240,7 @@ public class LoginController {
             LoginEntity loginEntity = loginService.ssoLoginCheck(empNo);
 
             if (loginEntity != null) {
-                String clientIP = ClientIPAspect.getClientIP();
-                loginEntity.setClientIP(clientIP);
-                String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm());
-                Claims claims = jwtUtil.validateToken(token);
-
-                // Set HTTP-only cookie
-                Cookie jwtCookie = jwtUtil.createJwtCookie(token);
-                response.addCookie(jwtCookie);
-
-                // loginResultService call
-                Map<String, Object> procedureResult = loginResultService.callLoginProcedure(empNo, clientIP);
-                LoginResultEntity loginResult = new LoginResultEntity();
-                loginResult.setErrCd((String) procedureResult.get("errCd"));
-                loginResult.setErrMsg((String) procedureResult.get("errMsg"));
-
-                if (!"00".equals(loginResult.getErrCd())) {
-                    return responseEntityUtil.okBodyEntity(null, "01", "로그인 프로시저 처리 실패: " + loginResult.getErrMsg());
-                }
-
-                Map<String, Object> userInfo = new HashMap<>();
-                userInfo.put("empNo", loginEntity.getEmpNo());
-                userInfo.put("empNm", loginEntity.getEmpNm());
-                userInfo.put("auth", loginEntity.getAuth());
-                userInfo.put("levelCd", loginEntity.getLevelCd());
-                userInfo.put("orgCd", loginEntity.getOrgCd());
-                userInfo.put("orgNm", loginEntity.getOrgNm());
-                userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
-                userInfo.put("carOrgNm", loginEntity.getCarOrgNm());
-                userInfo.put("carMngOrgCd", loginEntity.getCarMngOrgCd());
-                userInfo.put("carMngOrgNm", loginEntity.getCarMngOrgNm());
-                userInfo.put("standardSectionCd", loginEntity.getStandardSectionCd());
-                userInfo.put("standardSectionNm", loginEntity.getStandardSectionNm());
-                userInfo.put("pwdChgYn", loginEntity.getPwdChgYn());
-                userInfo.put("ip", clientIP);
-
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("user", userInfo);
-                responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
-
-                return responseEntityUtil.okBodyEntity(responseData);
+                return processLoginSuccess(loginEntity, response, empNo);
             } else {
                 return responseEntityUtil.okBodyEntity(null, "01", "아이디 또는 비밀번호가 잘못되었습니다.");
             }
@@ -288,5 +250,54 @@ public class LoginController {
             System.out.println(errorMessage + e.getMessage());
             return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
         }
+    }
+
+    /**
+     * 로그인 성공 시 공통 로직을 처리하는 메서드
+     */
+    private ResponseEntity<ApiResponseDto<Map<String, Object>>> processLoginSuccess(
+            LoginEntity loginEntity,
+            HttpServletResponse response,
+            String empNo) {
+        String clientIP = ClientIPAspect.getClientIP();
+        loginEntity.setClientIP(clientIP);
+        String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm());
+        Claims claims = jwtUtil.validateToken(token);
+
+        // Set HTTP-only cookie
+        Cookie jwtCookie = jwtUtil.createJwtCookie(token);
+        response.addCookie(jwtCookie);
+
+        // loginResultService call
+        Map<String, Object> procedureResult = loginResultService.callLoginProcedure(empNo, clientIP);
+        LoginResultEntity loginResult = new LoginResultEntity();
+        loginResult.setErrCd((String) procedureResult.get("errCd"));
+        loginResult.setErrMsg((String) procedureResult.get("errMsg"));
+
+        if (!"00".equals(loginResult.getErrCd())) {
+            return responseEntityUtil.okBodyEntity(null, "01", "로그인 프로시저 처리 실패: " + loginResult.getErrMsg());
+        }
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("empNo", loginEntity.getEmpNo());
+        userInfo.put("empNm", loginEntity.getEmpNm());
+        userInfo.put("auth", loginEntity.getAuth());
+        userInfo.put("levelCd", loginEntity.getLevelCd());
+        userInfo.put("orgCd", loginEntity.getOrgCd());
+        userInfo.put("orgNm", loginEntity.getOrgNm());
+        userInfo.put("carOrgCd", loginEntity.getCarOrgCd());
+        userInfo.put("carOrgNm", loginEntity.getCarOrgNm());
+        userInfo.put("carMngOrgCd", loginEntity.getCarMngOrgCd());
+        userInfo.put("carMngOrgNm", loginEntity.getCarMngOrgNm());
+        userInfo.put("standardSectionCd", loginEntity.getStandardSectionCd());
+        userInfo.put("standardSectionNm", loginEntity.getStandardSectionNm());
+        userInfo.put("pwdChgYn", loginEntity.getPwdChgYn());
+        userInfo.put("ip", clientIP);
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("user", userInfo);
+        responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
+
+        return responseEntityUtil.okBodyEntity(responseData);
     }
 }
