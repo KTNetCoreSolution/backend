@@ -163,6 +163,7 @@ public class LoginController {
         }
 
         // ssoToken을 URL 인코딩
+        /*
         String encodedSsoToken;
         try {
             encodedSsoToken = URLEncoder.encode(ssoToken, StandardCharsets.UTF_8.toString());
@@ -170,9 +171,10 @@ public class LoginController {
             logger.error("토큰 인코딩 실패: {}", e.getMessage());
             return responseEntityUtil.errBodyEntity("토큰 인코딩 실패: " + e.getMessage(), 500);
         }
+        */
 
         URI getUrl = UriComponentsBuilder.fromUriString(mKateUrl)
-                .queryParam("token", encodedSsoToken)
+                .queryParam("token", ssoToken)
                 .encode()
                 .build(true)
                 .toUri();
