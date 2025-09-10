@@ -28,11 +28,11 @@ import java.io.InputStream;
 import java.util.*;
 
 @RestController
-@RequestMapping("${api.base.path}/carnotice")
+@RequestMapping("${api.base.path}/notice2")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "2.MAIN > 차량공지사항관리", description = "공지사항을 관리하는 API")
-public class CarNoticeController {
-    private static final Logger logger = LoggerFactory.getLogger(CarNoticeController.class);
+@io.swagger.v3.oas.annotations.tags.Tag(name = "2.MAIN > 공지사항관리2", description = "공지사항을 관리하는 API")
+public class Notice2Controller {
+    private static final Logger logger = LoggerFactory.getLogger(Notice2Controller.class);
 
     private final ResponseEntityUtil responseEntityUtil;
     private final MapViewProcessor mapViewProcessor;
@@ -51,7 +51,7 @@ public class CarNoticeController {
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "CARNOTICE";
+        String rptCd = "NOTICE";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -90,7 +90,7 @@ public class CarNoticeController {
             return responseEntityUtil.okBodyEntity(null, "01", "파라미터가 잘못되어 있습니다.");
         }
 
-        String rptCd = "CARNOTICETRAN";
+        String rptCd = "NOTICETRAN";
         String jobGb = "SET";
         Claims claims = (Claims) httpRequest.getAttribute("user");
         String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
@@ -148,7 +148,7 @@ public class CarNoticeController {
             return responseEntityUtil.okBodyEntity(null, "01", "제목과 내용을 입력해주세요.");
         }
 
-        String rptCd = "CARNOTICETRAN";
+        String rptCd = "NOTICETRAN";
         String jobGb = "SET";
         Claims claims = (Claims) httpRequest.getAttribute("user");
         String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
@@ -193,7 +193,7 @@ public class CarNoticeController {
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "CARNOTICEFILE";
+        String rptCd = "NOTICEFILE";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -239,7 +239,7 @@ public class CarNoticeController {
             return responseEntityUtil.okBodyEntity(null, "01", "파일 크기가 " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB 제한을 초과했습니다.");
         }
 
-        String rptCd = "CARNOTICEFILETRAN";
+        String rptCd = "NOTICEFILETRAN";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -323,7 +323,7 @@ public class CarNoticeController {
             return responseEntityUtil.okBodyEntity(null, "01", "Invalid gubun value for deletion. Must be 'D'.");
         }
 
-        String rptCd = "CARNOTICEFILETRAN";
+        String rptCd = "NOTICEFILETRAN";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");

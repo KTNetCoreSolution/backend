@@ -28,11 +28,11 @@ import java.io.InputStream;
 import java.util.*;
 
 @RestController
-@RequestMapping("${api.base.path}/carnotice")
+@RequestMapping("${api.base.path}/carnotice2")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "2.MAIN > 차량공지사항관리", description = "공지사항을 관리하는 API")
-public class CarNoticeController {
-    private static final Logger logger = LoggerFactory.getLogger(CarNoticeController.class);
+@io.swagger.v3.oas.annotations.tags.Tag(name = "2.MAIN > 차량공지사항관리2", description = "공지사항을 관리하는 API")
+public class CarNotice2Controller {
+    private static final Logger logger = LoggerFactory.getLogger(CarNotice2Controller.class);
 
     private final ResponseEntityUtil responseEntityUtil;
     private final MapViewProcessor mapViewProcessor;
