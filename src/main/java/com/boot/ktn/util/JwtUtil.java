@@ -61,7 +61,7 @@ public class JwtUtil {
         this.expirationTime = expirationTime;
     }
 
-    public String generateToken(String empNo, String auth, String empNm, String orgCd, String orgNm) {
+    public String generateToken(String empNo, String auth, String empNm, String orgCd, String orgNm, String levelCd) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
         return Jwts.builder()
@@ -70,6 +70,7 @@ public class JwtUtil {
                 .claim("empNm", empNm)
                 .claim("orgCd", orgCd)
                 .claim("orgNm", orgNm)
+                .claim("levelCd", levelCd)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(signingKey)

@@ -63,6 +63,7 @@ public class AuthController {
             responseData.put("auth", claims.get("auth"));
             responseData.put("orgCd", claims.get("orgCd"));
             responseData.put("orgNm", claims.get("orgNm"));
+            responseData.put("levelCd", claims.get("levelCd"));
             responseData.put("expiresAt", claims.getExpiration().getTime() / 1000);
             return responseEntityUtil.okBodyEntity(responseData);
         } catch (Exception e) {
@@ -104,6 +105,7 @@ public class AuthController {
             String empNm = claims.get("empNm", String.class);
             String orgCd = claims.get("orgCd", String.class);
             String orgNm = claims.get("orgNm", String.class);
+            String levelCd = claims.get("levelCd", String.class);
 
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("empNo", empNo);
@@ -111,6 +113,7 @@ public class AuthController {
             userInfo.put("auth", auth);
             userInfo.put("orgCd", orgCd);
             userInfo.put("orgNm", orgNm);
+            userInfo.put("levelCd", levelCd);
             userInfo.put("ip", ClientIPAspect.getClientIP());
 
             Map<String, Object> responseData = new HashMap<>();
@@ -119,7 +122,7 @@ public class AuthController {
             responseData.put("expiresAt", expiresAt);
 
             if (extend) {
-                String newToken = jwtUtil.generateToken(empNo, auth, empNm, orgCd, orgNm);
+                String newToken = jwtUtil.generateToken(empNo, auth, empNm, orgCd, orgNm, levelCd);
                 Cookie jwtCookie = jwtUtil.createJwtCookie(newToken);
                 response.addCookie(jwtCookie);
 

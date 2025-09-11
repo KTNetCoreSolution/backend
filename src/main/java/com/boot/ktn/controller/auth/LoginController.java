@@ -263,7 +263,7 @@ public class LoginController {
             String empNo) {
         String clientIP = ClientIPAspect.getClientIP();
         loginEntity.setClientIP(clientIP);
-        String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm());
+        String token = jwtUtil.generateToken(empNo, loginEntity.getAuth(), loginEntity.getEmpNm(), loginEntity.getOrgCd(), loginEntity.getOrgNm(), loginEntity.getLevelCd());
         Claims claims = jwtUtil.validateToken(token);
 
         // Set HTTP-only cookie
