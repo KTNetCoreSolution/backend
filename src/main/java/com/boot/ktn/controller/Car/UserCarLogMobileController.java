@@ -229,6 +229,7 @@ public class UserCarLogMobileController {
 
     @CommonApiResponses
     @PostMapping("/carLogRequestList")
+    //운행일지 미결재 목록
     public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> carLogRequestList(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
