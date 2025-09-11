@@ -51,7 +51,7 @@ public class Notice2Controller {
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "NOTICE";
+        String rptCd = "NOTICE2";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -90,7 +90,7 @@ public class Notice2Controller {
             return responseEntityUtil.okBodyEntity(null, "01", "파라미터가 잘못되어 있습니다.");
         }
 
-        String rptCd = "NOTICETRAN";
+        String rptCd = "NOTICETRAN2";
         String jobGb = "SET";
         Claims claims = (Claims) httpRequest.getAttribute("user");
         String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
@@ -148,7 +148,7 @@ public class Notice2Controller {
             return responseEntityUtil.okBodyEntity(null, "01", "제목과 내용을 입력해주세요.");
         }
 
-        String rptCd = "NOTICETRAN";
+        String rptCd = "NOTICETRAN2";
         String jobGb = "SET";
         Claims claims = (Claims) httpRequest.getAttribute("user");
         String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
@@ -193,7 +193,7 @@ public class Notice2Controller {
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "NOTICEFILE";
+        String rptCd = "NOTICEFILE2";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -239,7 +239,7 @@ public class Notice2Controller {
             return responseEntityUtil.okBodyEntity(null, "01", "파일 크기가 " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB 제한을 초과했습니다.");
         }
 
-        String rptCd = "NOTICEFILETRAN";
+        String rptCd = "NOTICEFILETRAN2";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -323,7 +323,7 @@ public class Notice2Controller {
             return responseEntityUtil.okBodyEntity(null, "01", "Invalid gubun value for deletion. Must be 'D'.");
         }
 
-        String rptCd = "NOTICEFILETRAN";
+        String rptCd = "NOTICEFILETRAN2";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
