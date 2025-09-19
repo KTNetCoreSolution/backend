@@ -27,7 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("${api.base.path}/standard")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "4.표준활동 > 현황", description = "현황을 관리하는 API")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "4.표준활동 > 대시보드", description = "대시보드를 관리하는 API")
 public class StandardActivityDashBoardController {
     private static final Logger logger = LoggerFactory.getLogger(StandardActivityDashBoardController.class);
 

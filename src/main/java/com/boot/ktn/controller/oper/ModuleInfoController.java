@@ -25,7 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("${api.base.path}/oper/moduleinfo")
 @RequiredArgsConstructor
-@io.swagger.v3.oas.annotations.tags.Tag(name = "3.시스템관리 > 공통", description = "업무정보를 가져오는 API")
+@io.swagger.v3.oas.annotations.tags.Tag(name = "3.시스템관리 > 업무정보", description = "업무정보를 가져오는 API")
 public class ModuleInfoController {
     private static final Logger logger = LoggerFactory.getLogger(ModuleInfoController.class);
 
