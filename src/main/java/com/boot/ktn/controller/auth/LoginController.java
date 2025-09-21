@@ -6,9 +6,9 @@ import com.boot.ktn.entity.auth.LoginEntity;
 import com.boot.ktn.entity.auth.LoginResultEntity;
 import com.boot.ktn.service.auth.LoginResultService;
 import com.boot.ktn.service.auth.LoginService;
-import com.boot.ktn.util.CommonApiResponses;
-import com.boot.ktn.util.JwtUtil;
-import com.boot.ktn.util.ResponseEntityUtil;
+import com.boot.ktn.service.mapview.MapViewFileProcessor;
+import com.boot.ktn.service.mapview.MapViewProcessor;
+import com.boot.ktn.util.*;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +38,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -52,6 +53,9 @@ public class LoginController {
     private final ResponseEntityUtil responseEntityUtil;
     private final LoginResultService loginResultService;
     private final RestTemplate restTemplate;
+    private final MapViewParamsUtil mapViewParamsUtil;
+    private final MapViewProcessor mapViewProcessor;
+    private final EscapeUtil escapeUtil;
 
     @Value("${MKATE_URL:#{''}}")
     private String mKateUrl;
@@ -252,6 +256,34 @@ public class LoginController {
             System.out.println(errorMessage + e.getMessage());
             return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
         }
+    }
+
+    @CommonApiResponses
+    @PostMapping("/mLogin/access/list")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> mLoginAccessList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "MLOGIN_ACCESS";
+        String jobGb = "GET";
+        String empNo = "mLoginAccess";
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/list unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
     }
 
     /**
