@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -85,6 +86,7 @@ public class ExcelUploadController {
 
             // 엑셀 파일인지 확인 (XSSFWorkbook으로 파싱 시도)
             try {
+                ZipSecureFile.setMinInflateRatio(0.005);
                 workbook = new XSSFWorkbook(new ByteArrayInputStream(fileData));
             } catch (IOException e) {
                 errorMessage = "유효하지 않은 엑셀 파일 형식입니다.";
