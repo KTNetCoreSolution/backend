@@ -450,7 +450,7 @@ public class ExcelUploadService {
 
         try {
             conn = dataSource.getConnection();
-            String sql = "INSERT INTO tb_exceluploadhist (RPTCD, UPLOADDT, RESULTYN, MESSAGE) VALUES (?, NOW(), ?, ?)";
+            String sql = "INSERT INTO tb_exceluploadhist (RPTCD, UPLOADDT, RESULTYN, MESSAGE) VALUES (?, GETDATE(), ?, ?)";
             query = sql
                     .replaceFirst("\\?", "'" + escapeUtil.escape(rptCd) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(resultYn) + "'")
