@@ -14,6 +14,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -34,8 +35,7 @@ public class ExcelUploadService {
     private static final Logger logger = LoggerFactory.getLogger(ExcelUploadService.class);
     private static final int BATCH_SIZE = 1000; // 서버 부하 방지를 위한 배치 크기
 
-    // 단일 날짜/시간 상수 및 포맷터
-    private final LocalDateTime CURRENT_DATE_TIME = LocalDateTime.now();
+    // DateTimeFormatter는 재사용 가능하므로 final 유지
     private final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final DateTimeFormatter YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyyMM");
@@ -143,14 +143,13 @@ public class ExcelUploadService {
             int endRowNum = sheet.getPhysicalNumberOfRows();
 
             for (int rowNum = endRowNum; rowNum >= 0; rowNum--) {
-                Row chkRow  = sheet.getRow(rowNum - 1);
+                Row chkRow = sheet.getRow(rowNum - 1);
                 if (chkRow != null) {
                     Cell cell = chkRow.getCell(0, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
                     String cellValue = formatCellValue(cell, DATE_FORMATTER, TIME_FORMATTER);
                     if (cellValue.isEmpty()) {
-                        endRowNum--;    //유효한 endRowNum로 재설정
-                    }
-                    else {
+                        endRowNum--; // 유효한 endRowNum로 재설정
+                    } else {
                         endRowNum = rowNum;
                         break;
                     }
@@ -368,12 +367,12 @@ public class ExcelUploadService {
                             int minutes = (int) ((totalSeconds % 3600) / 60);
                             int seconds = (int) (totalSeconds % 60);
                             LocalTime time = LocalTime.of(hours % 24, minutes, seconds);
-                            return time.format(timeFormatter); // HH:mm:ss (e.g., 11:00:02, 12:05:00)
+                            return time.format(timeFormatter); // HH:mm:ss
                         }
                         // 날짜 형식
                         java.util.Date utilDate = cell.getDateCellValue();
                         LocalDateTime dateTime = utilDate.toInstant()
-                                .atZone(java.time.ZoneId.systemDefault())
+                                .atZone(ZoneId.of("Asia/Seoul"))
                                 .toLocalDateTime();
                         return dateTime.toLocalDate().format(dateFormatter); // yyyy-MM-dd
                     } catch (Exception e) {
@@ -387,8 +386,6 @@ public class ExcelUploadService {
                         try {
                             LocalDate date = LocalDate.parse(formattedValue, DateTimeFormatter.ofPattern("yyyyMMdd"));
                             return formattedValue; // 20250603
-                            // Optionally convert to yyyy-MM-dd:
-                            // return date.format(dateFormatter); // 2025-06-03
                         } catch (DateTimeParseException e) {
                             return formattedValue; // Non-date number (e.g., 123456)
                         }
@@ -408,8 +405,6 @@ public class ExcelUploadService {
                     try {
                         LocalDate date = LocalDate.parse(processedVal, DateTimeFormatter.ofPattern("yyyyMMdd"));
                         return processedVal; // 20250603
-                        // Optionally convert to yyyy-MM-dd:
-                        // return date.format(dateFormatter); // 2025-06-03
                     } catch (DateTimeParseException e) {
                         return processedVal; // Non-date number
                     }
@@ -455,7 +450,7 @@ public class ExcelUploadService {
 
         try {
             conn = dataSource.getConnection();
-            String sql = "INSERT INTO tb_exceluploadhist (RPTCD, UPLOADDT, RESULTYN, MESSAGE) VALUES (?, NOW(), ?, ?)"; // 로컬 변수명 query와 충돌 방지를 위해 sql로 변경
+            String sql = "INSERT INTO tb_exceluploadhist (RPTCD, UPLOADDT, RESULTYN, MESSAGE) VALUES (?, NOW(), ?, ?)";
             query = sql
                     .replaceFirst("\\?", "'" + escapeUtil.escape(rptCd) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(resultYn) + "'")
@@ -491,15 +486,16 @@ public class ExcelUploadService {
     private void insertExcelUploadResult(String rptCd, String uploadKey, String uploadRow, String resultYn, String totCnt, String message, String empNo, String empNm) {
         Connection conn = null;
         PreparedStatement stmt = null;
+        LocalDateTime currentDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul")); // KST 시간대 사용
         try {
             conn = dataSource.getConnection();
             String sql = "INSERT INTO tb_exceluploadresult (UPLOAD_KEY, UPLOAD_ROW, UPLOAD_MON, UPLOADDT, EMPNO, EMPNM, RPTCD, RESULTYN, TOT_CNT, MESSAGE) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // 로컬 변수명 query와 충돌 방지를 위해 sql로 변경
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             query = sql
                     .replaceFirst("\\?", "'" + escapeUtil.escape(uploadKey) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(uploadRow) + "'")
-                    .replaceFirst("\\?", "'" + escapeUtil.escape(CURRENT_DATE_TIME.format(YEAR_MONTH_FORMATTER)) + "'")
-                    .replaceFirst("\\?", "'" + escapeUtil.escape(CURRENT_DATE_TIME.format(DATE_FORMATTER_DB)) + "'")
+                    .replaceFirst("\\?", "'" + escapeUtil.escape(currentDateTime.format(YEAR_MONTH_FORMATTER)) + "'")
+                    .replaceFirst("\\?", "'" + escapeUtil.escape(currentDateTime.format(DATE_FORMATTER_DB)) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(empNo) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(empNm != null ? empNm : "") + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(rptCd) + "'")
@@ -509,8 +505,8 @@ public class ExcelUploadService {
             stmt = conn.prepareStatement(sql);
             stmt.setString(1, uploadKey);
             stmt.setString(2, uploadRow);
-            stmt.setString(3, CURRENT_DATE_TIME.format(YEAR_MONTH_FORMATTER));
-            stmt.setString(4, CURRENT_DATE_TIME.format(DATE_FORMATTER_DB));
+            stmt.setString(3, currentDateTime.format(YEAR_MONTH_FORMATTER));
+            stmt.setString(4, currentDateTime.format(DATE_FORMATTER_DB));
             stmt.setString(5, empNo);
             stmt.setString(6, empNm != null ? empNm : "");
             stmt.setString(7, rptCd);
@@ -535,6 +531,6 @@ public class ExcelUploadService {
      * @return 생성된 업로드 키
      */
     private String generateUploadKey() {
-        return CURRENT_DATE_TIME.format(UPLOAD_KEY_FORMATTER);
+        return LocalDateTime.now(ZoneId.of("Asia/Seoul")).format(UPLOAD_KEY_FORMATTER); // KST 시간대 사용
     }
 }
