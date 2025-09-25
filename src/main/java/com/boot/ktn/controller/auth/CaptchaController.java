@@ -22,7 +22,7 @@ public class CaptchaController {
     @PostMapping(value = "/captcha", produces = MediaType.IMAGE_PNG_VALUE)
     public byte[] generateCaptcha(HttpSession session) throws Exception {
         // Generate random CAPTCHA text using commons-lang3
-        String captchaText = RandomStringUtils.random(6, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
+        String captchaText = RandomStringUtils.random(6, "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
         session.setAttribute("captchaText", captchaText);
 
         // Create CAPTCHA image
@@ -48,7 +48,7 @@ public class CaptchaController {
 
         // Draw CAPTCHA text with adjusted spacing
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Arial", Font.BOLD, 42)); // Slightly larger font size
+        g2d.setFont(new Font("Malgun Gothic", Font.BOLD, 42)); // Slightly larger font size
         int charWidth = 30; // Approximate width per character
         int spacing = 5; // Additional spacing between characters
         int totalTextWidth = 6 * charWidth + 5 * spacing; // 6 characters + 5 gaps
