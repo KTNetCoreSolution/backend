@@ -259,6 +259,34 @@ public class LoginController {
     }
 
     @CommonApiResponses
+    @PostMapping("/mLogin/sso/access/list")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> mLoginSsoAccessList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "SSOMLOGIN_ACCESS";
+        String jobGb = "GET";
+        String empNo = "mLoginSsoAccess";
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/list unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
     @PostMapping("/mLogin/access/list")
     public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> mLoginAccessList(
             @RequestBody Map<String, Object> request,
