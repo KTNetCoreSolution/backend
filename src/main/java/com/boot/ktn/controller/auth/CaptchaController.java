@@ -22,7 +22,7 @@ public class CaptchaController {
     @PostMapping(value = "/captcha", produces = MediaType.IMAGE_PNG_VALUE)
     public byte[] generateCaptcha(HttpSession session) throws Exception {
         // Generate random CAPTCHA text using commons-lang3
-        String captchaText = RandomStringUtils.random(6, "ㄱㄷㄹㅁㅂㅅㅈㅊㅋㅌㅍㅎABCDEFGHIJKLMNOPQRSTUVWXYZ23456789");
+        String captchaText = RandomStringUtils.random(6, "ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789");
         session.setAttribute("captchaText", captchaText);
 
         // Create CAPTCHA image
