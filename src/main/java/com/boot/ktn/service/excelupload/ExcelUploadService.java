@@ -59,13 +59,25 @@ public class ExcelUploadService {
      */
     @Async
     public void asyncExcelUpload(String rptCd, Workbook workbook, String empNo, String empNm) {
+        String uploadKey = generateUploadKey();
+        String inValYn = "N";
+        String paramRptCd = rptCd;
+
+        if (rptCd != null && rptCd.contains("|")) {
+            String[] parts = rptCd.split("\\|"); // '|'는 특수문자이므로 이스케이프 처리 필요
+            paramRptCd = parts[0];
+            if (parts.length > 1 && (parts[1].equals("Y") || parts[1].equals("N"))) {
+                inValYn = parts[1];
+            }
+        }
+
         try {
-            excelUpload(rptCd, workbook, empNo, empNm);
+            excelUpload(paramRptCd, workbook, empNo, empNm, uploadKey, inValYn);
         } catch (Exception e) {
-            errorMessage = "비동기 엑셀 업로드 처리 중 오류: " + rptCd;
+            errorMessage = "엑셀 업로드 처리 중 오류: " + paramRptCd;
             logger.error(errorMessage, e);
-            insertExcelUploadHist(rptCd, "N", errorMessage + ": " + e.getMessage());
-            insertExcelUploadResult(rptCd, generateUploadKey(), "0", "N", "0", errorMessage + ": " + e.getMessage(), empNo, empNm);
+            insertExcelUploadHist(paramRptCd, "N", errorMessage + ": " + e.getMessage());
+            insertExcelUploadResult(paramRptCd, uploadKey, "0", "N", "0", errorMessage + ": " + e.getMessage(), empNo, empNm);
         } finally {
             // Workbook 자원 해제
             if (workbook != null) {
@@ -85,7 +97,7 @@ public class ExcelUploadService {
      * @param empNo 사원 번호
      * @param empNm 사원 이름
      */
-    public void excelUpload(String rptCd, Workbook workbook, String empNo, String empNm) {
+    public void excelUpload(String rptCd, Workbook workbook, String empNo, String empNm, String uploadKey, String inValYn) {
         // 입력 유효성 검사
         if (workbook == null) {
             errorMessage = "엑셀 워크북이 null입니다.";
@@ -204,7 +216,16 @@ public class ExcelUploadService {
                     throw new IllegalArgumentException(errorMessage);
                 }
 
-                StringBuilder rowValue = new StringBuilder("(NULL,");
+                StringBuilder rowValue = new StringBuilder("(");
+                if (inValYn.equals("Y")) {
+                    // uploadKey, empNo, empNm 값을 먼저 추가
+                    rowValue.append("'").append(uploadKey).append("',");
+                    rowValue.append("'").append(empNo).append("',");
+                    rowValue.append("'").append(empNm).append("',");
+                } else {
+                    rowValue.append("NULL,"); // 또는 다른 처리가 필요하다면 변경하세요
+                }
+
                 boolean hasData = false;
 
                 for (int colNum = 0; colNum < tableInfo.getColCnt(); colNum++) {
@@ -231,7 +252,7 @@ public class ExcelUploadService {
 
             // 성공 로그 기록
             insertExcelUploadHist(rptCd, "Y", "업로드 성공");
-            insertExcelUploadResult(rptCd, generateUploadKey(), String.valueOf(rowCount), "Y", String.valueOf(rowCount), "업로드 성공", empNo, empNm);
+            insertExcelUploadResult(rptCd, uploadKey, String.valueOf(rowCount), "Y", String.valueOf(rowCount), "업로드 성공", empNo, empNm);
 
         } catch (Exception e) {
             errorMessage = "엑셀 오류: 열(" + currentColNum + "), 행(" + currentRowNum + "): " + e.getMessage();

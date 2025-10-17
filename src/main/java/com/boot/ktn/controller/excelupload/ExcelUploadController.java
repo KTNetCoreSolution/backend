@@ -47,7 +47,7 @@ public class ExcelUploadController {
 
     /**
      * 엑셀 파일 업로드 처리
-     * @param rptCd 업로드 키코드
+     * @param rptCd 업로드 키코드 (rptCd값|Y = Y일때는 db 입력 시 uploadKey, empNo, empNm 등 내부값을 넣는다, rptCd값 = 일때는 엑셀값만 그대로 넣는다.)
      * @param file 엑셀 파일
      * @param httpRequest HTTP 요청
      * @return 업로드 결과 응답
@@ -101,10 +101,9 @@ public class ExcelUploadController {
 
         // 사용자 정보 추출
         Claims claims = (Claims) httpRequest.getAttribute("user");
-        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "-1";
         String empNm = claims != null && claims.get("empNm", String.class) != null ? claims.get("empNm", String.class) : "";
 
-        // 비동기적으로 엑셀 업로드 처리
         // 비동기적으로 엑셀 업로드 처리
         try {
             excelUploadService.asyncExcelUpload(rptCd, workbook, empNo, empNm);
