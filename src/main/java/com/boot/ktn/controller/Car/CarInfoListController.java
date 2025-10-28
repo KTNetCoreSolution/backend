@@ -188,4 +188,124 @@ public class CarInfoListController {
         return responseEntityUtil.okBodyEntity(unescapedResultList);
     }
 
+    @CommonApiResponses
+    @PostMapping("/CarinfoRequest")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> CarinfoRequest(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "CARINFOREQUEST";
+        String jobGb = "SET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/CarinfoRequest unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/RequstList")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> RequstList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "CARINFOREQUESTLIST";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/RequstList unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/RequstDetail")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> RequstDetail(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "CARINFOREQUESTDETAIL";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/RequstList unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/RequestConfirmTransaction")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> RequestConfirmTransaction(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "CARINFOREQUESTCONFIRMTRAN";
+        String jobGb = "SET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/RequstList unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
 }
