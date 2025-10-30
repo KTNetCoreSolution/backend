@@ -257,7 +257,7 @@ public class ExcelUploadService {
         } catch (Exception e) {
             errorMessage = "엑셀 오류: 열(" + currentColNum + "), 행(" + currentRowNum + "): " + e.getMessage();
             logger.error(errorMessage, e);
-            insertExcelUploadHist(tableInfo.getUploadName(), "N", errorMessage);
+            //insertExcelUploadHist(tableInfo.getUploadName(), "N", errorMessage);
             throw new IllegalArgumentException(errorMessage, e);
         }
     }
