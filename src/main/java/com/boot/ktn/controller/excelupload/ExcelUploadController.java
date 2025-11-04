@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +76,8 @@ public class ExcelUploadController {
         }
 
         // 엑셀 파일 형식 검증 및 Workbook 생성
-        XSSFWorkbook workbook = null;
+        //XSSFWorkbook workbook = null;
+        Workbook workbook = null;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              InputStream inputStream = file.getInputStream()) {
             byte[] buffer = new byte[8192];
@@ -87,7 +90,8 @@ public class ExcelUploadController {
             // 엑셀 파일인지 확인 (XSSFWorkbook으로 파싱 시도)
             try {
                 ZipSecureFile.setMinInflateRatio(0.005);
-                workbook = new XSSFWorkbook(new ByteArrayInputStream(fileData));
+                //workbook = new XSSFWorkbook(new ByteArrayInputStream(fileData));
+                workbook = WorkbookFactory.create(new ByteArrayInputStream(fileData));
             } catch (IOException e) {
                 errorMessage = "유효하지 않은 엑셀 파일 형식입니다.";
                 logger.error(errorMessage, e.getMessage(), e);
