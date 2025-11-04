@@ -257,4 +257,66 @@ public class UserCarLogMobileController {
 
         return responseEntityUtil.okBodyEntity(unescapedResultList);
     }
+
+    @CommonApiResponses
+    @PostMapping("/penalyList")
+    //과태료 미납 목록
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> penalyList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "MPENALTYLIST";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/penalyList unescapedResultList = mapViewParamsUtil.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/paymentTransaction")
+    //과태료 납부완료 처리
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> paymentTransaction(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "MPAYMENTTRANSACTION";
+        String jobGb = "SET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/paymentTransaction unescapedResultList = mapViewParamsUtil.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
 }
