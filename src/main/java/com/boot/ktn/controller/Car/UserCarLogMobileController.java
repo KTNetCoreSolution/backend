@@ -259,7 +259,7 @@ public class UserCarLogMobileController {
     }
 
     @CommonApiResponses
-    @PostMapping("/penalyList")
+    @PostMapping("/penaltyList")
     //과태료 미납 목록
     public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> penalyList(
             @RequestBody Map<String, Object> request,
