@@ -261,7 +261,7 @@ public class UserCarLogMobileController {
     @CommonApiResponses
     @PostMapping("/penaltyList")
     //과태료 미납 목록
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> penalyList(
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> penaltyList(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
@@ -277,7 +277,7 @@ public class UserCarLogMobileController {
         try {
             unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
         } catch (IllegalArgumentException e) {
-            errorMessage = "/penalyList unescapedResultList = mapViewParamsUtil.processDynamicView(rptCd, params, empNo, jobGb);";
+            errorMessage = "/penaltyList unescapedResultList = mapViewParamsUtil.processDynamicView(rptCd, params, empNo, jobGb);";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
         }
