@@ -328,6 +328,8 @@ public class LoginController {
 
         // Set HTTP-only cookie
         Cookie jwtCookie = jwtUtil.createJwtCookie(token);
+        jwtCookie.setSecure(true);
+        jwtCookie.setHttpOnly(true);
         response.addCookie(jwtCookie);
 
         // loginResultService call

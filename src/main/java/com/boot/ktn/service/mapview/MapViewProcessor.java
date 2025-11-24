@@ -29,10 +29,6 @@ public class MapViewProcessor {
     private final ClientIPAspect clientIPAspect;
     private final UserAgentUtil userAgentUtil;
 
-    @Setter
-    @Getter
-    String errorMessage;
-
     public List<Map<String, Object>> processDynamicView(String rptCd, List<String> params, String empNo, String jobGb) {
         // 1. 인증 정보 검증
         if (empNo == null || empNo.trim().isEmpty()) {
@@ -50,8 +46,8 @@ public class MapViewProcessor {
         try {
             procInfo = mapViewService.validateAndBuildCall(rptCd, params, empNo, ip, jobGb, userCongb, userAgent);
         } catch (IllegalArgumentException e) {
-            errorMessage = "Validation error for rptCd: {}, error: {}";
-            logger.error(this.getErrorMessage(), rptCd, e.getMessage());
+            String errorMsg = "Validation error for rptCd: {}, error: {}";
+            logger.error(errorMsg, rptCd, e.getMessage());
             throw e;
         }
 
@@ -62,9 +58,9 @@ public class MapViewProcessor {
         try {
             resultList = dynamicQueryService.executeDynamicQuery(procedureCall);
         } catch (IllegalArgumentException e) {
-            errorMessage = "데이터베이스 오류: ";
-            logger.error(this.getErrorMessage(), procedureCall, e.getMessage(), e);
-            throw new IllegalArgumentException(this.getErrorMessage() + e.getMessage());
+            String errorMsg = "데이터베이스 오류: ";
+            logger.error(errorMsg, procedureCall, e.getMessage(), e);
+            throw new IllegalArgumentException(errorMsg + e.getMessage());
         }
 
         // 4. Unescape and restore string values in the result

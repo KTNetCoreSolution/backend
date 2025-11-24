@@ -14,6 +14,9 @@ public class Sha256Util {
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.reset();
+            digest.update(new byte[0]);
+
             byte[] hash = digest.digest(text.getBytes("UTF-8"));
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {

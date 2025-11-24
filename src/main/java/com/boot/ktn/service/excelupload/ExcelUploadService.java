@@ -47,9 +47,6 @@ public class ExcelUploadService {
     @Autowired
     private EscapeUtil escapeUtil;
 
-    private String errorMessage;
-    private String query;
-
     /**
      * 비동기 엑셀 파일 업로드 처리
      * @param rptCd 업로드 키코드
@@ -74,10 +71,10 @@ public class ExcelUploadService {
         try {
             excelUpload(paramRptCd, workbook, empNo, empNm, uploadKey, inValYn);
         } catch (Exception e) {
-            errorMessage = "엑셀 업로드 처리 중 오류: " + paramRptCd;
-            logger.error(errorMessage, e);
-            insertExcelUploadHist(paramRptCd, "N", errorMessage + ": " + e.getMessage());
-            insertExcelUploadResult(paramRptCd, uploadKey, "0", "N", "0", errorMessage + ": " + e.getMessage(), empNo, empNm);
+            String errorMsg = "엑셀 업로드 처리 중 오류: " + paramRptCd;
+            logger.error(errorMsg, e);
+            insertExcelUploadHist(paramRptCd, "N", errorMsg + ": " + e.getMessage());
+            insertExcelUploadResult(paramRptCd, uploadKey, "0", "N", "0", errorMsg + ": " + e.getMessage(), empNo, empNm);
         } finally {
             // Workbook 자원 해제
             if (workbook != null) {
@@ -100,17 +97,17 @@ public class ExcelUploadService {
     public void excelUpload(String rptCd, Workbook workbook, String empNo, String empNm, String uploadKey, String inValYn) {
         // 입력 유효성 검사
         if (workbook == null) {
-            errorMessage = "엑셀 워크북이 null입니다.";
-            logger.error(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
+            String errorMsg = "엑셀 워크북이 null입니다.";
+            logger.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         // 업로드 기준 정보 조회
         ExcelUploadTableInfoEntity tableInfo = getExcelUploadTableInfo(rptCd);
         if (tableInfo == null || !"Y".equals(tableInfo.getUseYn())) {
-            errorMessage = "유효한 업로드 설정이 없습니다: " + rptCd;
-            logger.error(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
+            String errorMsg = "유효한 업로드 설정이 없습니다: " + rptCd;
+            logger.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         // 대상 테이블 TRUNCATE
@@ -120,10 +117,13 @@ public class ExcelUploadService {
         try {
             conn = dataSource.getConnection();
             conn.setAutoCommit(false);
-            stmt = conn.createStatement();
-            query = "TRUNCATE TABLE " + tableInfo.getTargetTable();
-            stmt.executeUpdate(query);
+            String targetTable = tableInfo.getTargetTable();
+            String deleteSql = "DELETE FROM " + targetTable;
+            try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
+                pstmt.executeUpdate();
+            }
             conn.commit();
+
         } catch (SQLException e) {
             if (conn != null) {
                 try {
@@ -132,9 +132,9 @@ public class ExcelUploadService {
                     logger.error("트랜잭션 롤백 실패", ex);
                 }
             }
-            errorMessage = "테이블 TRUNCATE 실패: " + tableInfo.getTargetTable();
-            logger.error(errorMessage + ", query={}", query, e);
-            throw new IllegalArgumentException(errorMessage, e);
+            String errorMsg = "테이블 TRUNCATE 실패: " + tableInfo.getTargetTable();
+            logger.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         } finally {
             try {
                 if (stmt != null) stmt.close();
@@ -183,10 +183,10 @@ public class ExcelUploadService {
 
             // 헤더 행 컬럼 수 유효성 검사
             if (endColNum != tableInfo.getColCnt()) {
-                errorMessage = "[DB: " + tableInfo.getColCnt() + ", 엑셀: " + endColNum + "] " + "헤더 컬럼 수가 일치하지 않습니다";
-                logger.error(errorMessage);
-                insertExcelUploadHist(rptCd, "N", errorMessage);
-                throw new IllegalArgumentException(errorMessage);
+                String errorMsg = "[DB: " + tableInfo.getColCnt() + ", 엑셀: " + endColNum + "] " + "헤더 컬럼 수가 일치하지 않습니다";
+                logger.error(errorMsg);
+                insertExcelUploadHist(rptCd, "N", errorMsg);
+                throw new IllegalArgumentException(errorMsg);
             }
 
             List<String> insertValues = new ArrayList<>();
@@ -210,10 +210,10 @@ public class ExcelUploadService {
 
                 // 데이터 행 컬럼 수 유효성 검사
                 if (dataColNum > tableInfo.getColCnt()) {
-                    errorMessage = "[DB: " + tableInfo.getColCnt() + ", 엑셀: " + dataColNum + "] " + "데이터 행 컬럼 수가 초과되었습니다";
-                    logger.error(errorMessage);
-                    insertExcelUploadHist(rptCd, "N", errorMessage);
-                    throw new IllegalArgumentException(errorMessage);
+                    String errorMsg = "[DB: " + tableInfo.getColCnt() + ", 엑셀: " + dataColNum + "] " + "데이터 행 컬럼 수가 초과되었습니다";
+                    logger.error(errorMsg);
+                    insertExcelUploadHist(rptCd, "N", errorMsg);
+                    throw new IllegalArgumentException(errorMsg);
                 }
 
                 StringBuilder rowValue = new StringBuilder("(");
@@ -255,10 +255,10 @@ public class ExcelUploadService {
             insertExcelUploadResult(rptCd, uploadKey, String.valueOf(rowCount), "Y", String.valueOf(rowCount), "업로드 성공", empNo, empNm);
 
         } catch (Exception e) {
-            errorMessage = "엑셀 오류: 열(" + currentColNum + "), 행(" + currentRowNum + "): " + e.getMessage();
-            logger.error(errorMessage, e);
-            //insertExcelUploadHist(tableInfo.getUploadName(), "N", errorMessage);
-            throw new IllegalArgumentException(errorMessage, e);
+            String errorMsg = "엑셀 오류: 열(" + currentColNum + "), 행(" + currentRowNum + "): " + e.getMessage();
+            logger.error(errorMsg, e);
+            //insertExcelUploadHist(tableInfo.getUploadName(), "N", errorMsg);
+            throw new IllegalArgumentException(errorMsg, e);
         }
     }
 
@@ -275,9 +275,9 @@ public class ExcelUploadService {
 
         try {
             conn = dataSource.getConnection();
-            query = "SELECT UPLOADNAME, TARGETTABLE, STARTROW, COLCNT, USEYN, DELYN " +
+            String selectQuery = "SELECT UPLOADNAME, TARGETTABLE, STARTROW, COLCNT, USEYN, DELYN " +
                     "FROM tb_exceluploadtableinfo WHERE RPTCD = ? AND USEYN = 'Y'";
-            stmt = conn.prepareStatement(query);
+            stmt = conn.prepareStatement(selectQuery);
             stmt.setString(1, rptCd);
             rs = stmt.executeQuery();
 
@@ -291,9 +291,9 @@ public class ExcelUploadService {
                 tableInfo.setDelYn(rs.getString("DELYN"));
             }
         } catch (SQLException e) {
-            errorMessage = "업로드 기준 정보 조회 실패: " + rptCd;
-            logger.error(errorMessage + ", query={}", query, e);
-            throw new IllegalArgumentException(errorMessage, e);
+            String errorMsg = "업로드 기준 정보 조회 실패: " + rptCd;
+            logger.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         } finally {
             try {
                 if (rs != null) rs.close();
@@ -323,13 +323,13 @@ public class ExcelUploadService {
             stmt = conn.createStatement();
 
             // INSERT 쿼리 동적 생성 및 실행
-            query = "INSERT INTO " + tableInfo.getTargetTable() + " VALUES " + String.join(",", insertValues);
-            stmt.executeUpdate(query);
+            String insertQuery = "INSERT INTO " + tableInfo.getTargetTable() + " VALUES " + String.join(",", insertValues);
+            stmt.executeUpdate(insertQuery);
 
             // 조건부 삭제 (DELYN = 'Y')
             if ("Y".equals(tableInfo.getDelYn())) {
-                query = "TRUNCATE TABLE " + tableInfo.getTargetTable();
-                deleteStmt = conn.prepareStatement(query);
+                String truncateQuery = "TRUNCATE TABLE " + tableInfo.getTargetTable();
+                deleteStmt = conn.prepareStatement(truncateQuery);
                 deleteStmt.executeUpdate();
             }
 
@@ -339,12 +339,12 @@ public class ExcelUploadService {
                 try {
                     conn.rollback();
                 } catch (SQLException ex) {
-                    logger.error("트랜잭션 롤백 실패, query={}", query, ex);
+                    logger.error("트랜잭션 롤백 실패", ex);
                 }
             }
-            errorMessage = "배치 삽입 실패: " + tableInfo.getUploadName();
-            logger.error(errorMessage + ", query={}", query, e);
-            throw new IllegalArgumentException(errorMessage, e);
+            String errorMsg = "배치 삽입 실패: " + tableInfo.getUploadName();
+            logger.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
         } finally {
             try {
                 if (deleteStmt != null) deleteStmt.close();
@@ -472,7 +472,7 @@ public class ExcelUploadService {
         try {
             conn = dataSource.getConnection();
             String sql = "INSERT INTO tb_exceluploadhist (RPTCD, UPLOADDT, RESULTYN, MESSAGE) VALUES (?, GETDATE(), ?, ?)";
-            query = sql
+            String insertQuery = sql
                     .replaceFirst("\\?", "'" + escapeUtil.escape(rptCd) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(resultYn) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(message) + "'");
@@ -482,7 +482,7 @@ public class ExcelUploadService {
             stmt.setString(3, message);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            logger.error("tb_exceluploadhist 삽입 실패: rptCd={}, query={}, error={}", rptCd, query, e.getMessage(), e);
+            logger.error("tb_exceluploadhist 삽입 실패: rptCd={}, error={}", rptCd, e.getMessage(), e);
         } finally {
             try {
                 if (stmt != null) stmt.close();
@@ -512,7 +512,7 @@ public class ExcelUploadService {
             conn = dataSource.getConnection();
             String sql = "INSERT INTO tb_exceluploadresult (UPLOAD_KEY, UPLOAD_ROW, UPLOAD_MON, UPLOADDT, EMPNO, EMPNM, RPTCD, RESULTYN, TOT_CNT, MESSAGE) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            query = sql
+            String insertQuery = sql
                     .replaceFirst("\\?", "'" + escapeUtil.escape(uploadKey) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(uploadRow) + "'")
                     .replaceFirst("\\?", "'" + escapeUtil.escape(currentDateTime.format(YEAR_MONTH_FORMATTER)) + "'")
@@ -536,7 +536,7 @@ public class ExcelUploadService {
             stmt.setString(10, message);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            logger.error("tb_exceluploadresult 삽입 실패: rptCd={}, query={}, error={}", rptCd, query, e.getMessage(), e);
+            logger.error("tb_exceluploadresult 삽입 실패: rptCd={}, error={}", rptCd, e.getMessage(), e);
         } finally {
             try {
                 if (stmt != null) stmt.close();

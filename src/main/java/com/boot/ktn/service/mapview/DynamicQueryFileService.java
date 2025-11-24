@@ -25,10 +25,6 @@ public class DynamicQueryFileService {
     private final DataSource dataSource;
     private final AppConfig.FileConfig fileConfig;
 
-    @Setter
-    @Getter
-    String errorMessage;
-
     public List<Map<String, Object>> executeDynamicFileQuery(String procedureCall, List<Object> originalParams) {
         List<Map<String, Object>> mappedResult = new ArrayList<>();
         Connection connection = null;
@@ -45,8 +41,8 @@ public class DynamicQueryFileService {
 
             connection = DataSourceUtils.getConnection(dataSource);
             if (connection == null) {
-                errorMessage = "executeDynamicFileQuery failed: Unable to obtain JDBC Connection from DataSource";
-                logger.error(this.getErrorMessage());
+                String errorMsg = "executeDynamicFileQuery failed: Unable to obtain JDBC Connection from DataSource";
+                logger.error(errorMsg);
                 throw new IllegalStateException("Unable to obtain JDBC Connection from DataSource");
             }
 
@@ -62,8 +58,8 @@ public class DynamicQueryFileService {
                 } else if (param instanceof byte[]) {
                     byte[] data = (byte[]) param;
                     if (data.length > fileConfig.getMaxFileSize()) {
-                        errorMessage = "executeDynamicFileQuery failed: File size exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit for procedureCall: " + procedureCall;
-                        logger.error(this.getErrorMessage());
+                        String errorMsg = "executeDynamicFileQuery failed: File size exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit for procedureCall: " + procedureCall;
+                        logger.error(errorMsg);
                         throw new IllegalArgumentException("File size exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit");
                     }
                     stmt.setBinaryStream(i + 1, new ByteArrayInputStream(data), data.length);
@@ -103,8 +99,8 @@ public class DynamicQueryFileService {
             }
 
         } catch (Exception e) {
-            errorMessage = "executeDynamicFileQuery failed for procedureCall: " + procedureCall;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "executeDynamicFileQuery failed for procedureCall: " + procedureCall;
+            logger.error(errorMsg, e.getMessage(), e);
             throw new IllegalArgumentException("데이터베이스 오류: " + e.getMessage());
         } finally {
             try {
@@ -112,8 +108,8 @@ public class DynamicQueryFileService {
                 if (stmt != null) stmt.close();
                 DataSourceUtils.releaseConnection(connection, dataSource);
             } catch (Exception e) {
-                errorMessage = "executeDynamicFileQuery failed: Error closing resources for procedureCall: " + procedureCall;
-                logger.error(this.getErrorMessage(), e.getMessage(), e);
+                String errorMsg = "executeDynamicFileQuery failed: Error closing resources for procedureCall: " + procedureCall;
+                logger.error(errorMsg, e.getMessage(), e);
             }
         }
 
@@ -138,8 +134,8 @@ public class DynamicQueryFileService {
 
             connection = DataSourceUtils.getConnection(dataSource);
             if (connection == null) {
-                errorMessage = "executeDynamicQuery failed: Unable to obtain JDBC Connection from DataSource";
-                logger.error(this.getErrorMessage());
+                String errorMsg = "executeDynamicQuery failed: Unable to obtain JDBC Connection from DataSource";
+                logger.error(errorMsg);
                 throw new IllegalStateException("Unable to obtain JDBC Connection from DataSource");
             }
 
@@ -205,8 +201,8 @@ public class DynamicQueryFileService {
             }
 
         } catch (Exception e) {
-            errorMessage = "executeDynamicQuery failed for procedureCall: " + procedureCall;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "executeDynamicQuery failed for procedureCall: " + procedureCall;
+            logger.error(errorMsg, e.getMessage(), e);
             throw new IllegalArgumentException("데이터베이스 오류: " + e.getMessage());
         } finally {
             try {
@@ -214,8 +210,8 @@ public class DynamicQueryFileService {
                 if (stmt != null) stmt.close();
                 DataSourceUtils.releaseConnection(connection, dataSource);
             } catch (Exception e) {
-                errorMessage = "executeDynamicQuery failed: Error closing resources for procedureCall: " + procedureCall;
-                logger.error(this.getErrorMessage(), e.getMessage(), e);
+                String errorMsg = "executeDynamicQuery failed: Error closing resources for procedureCall: " + procedureCall;
+                logger.error(errorMsg, e.getMessage(), e);
             }
         }
 
@@ -228,8 +224,8 @@ public class DynamicQueryFileService {
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
             if (columnCount == 0) {
-                errorMessage = "getColumnNames failed: No columns found in ResultSet";
-                logger.warn(this.getErrorMessage());
+                String errorMsg = "getColumnNames failed: No columns found in ResultSet";
+                logger.warn(errorMsg);
                 columnNames.add("col1");
                 return columnNames;
             }
@@ -238,8 +234,8 @@ public class DynamicQueryFileService {
                 columnNames.add(columnName);
             }
         } catch (Exception e) {
-            errorMessage = "getColumnNames failed: Failed to extract column names";
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "getColumnNames failed: Failed to extract column names";
+            logger.error(errorMsg, e.getMessage(), e);
             columnNames.add("col1");
         }
         return columnNames;
@@ -270,15 +266,15 @@ public class DynamicQueryFileService {
                     String base64 = param.substring(1, param.length() - 1);
                     byte[] decoded = Base64.getDecoder().decode(base64);
                     if (decoded.length > fileConfig.getMaxFileSize()) {
-                        errorMessage = "parseParameters failed: Base64 data exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit for param: " + param;
-                        logger.error(this.getErrorMessage());
+                        String errorMsg = "parseParameters failed: Base64 data exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit for param: " + param;
+                        logger.error(errorMsg);
                         throw new IllegalArgumentException("Base64 data exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit");
                     }
                     params.add(decoded);
                     originalParamIndex++;
                 } catch (IllegalArgumentException e) {
-                    errorMessage = "parseParameters failed: Failed to decode Base64 for param: " + param;
-                    logger.error(this.getErrorMessage(), e.getMessage(), e);
+                    String errorMsg = "parseParameters failed: Failed to decode Base64 for param: " + param;
+                    logger.error(errorMsg, e.getMessage(), e);
                     params.add(null);
                 }
             } else {

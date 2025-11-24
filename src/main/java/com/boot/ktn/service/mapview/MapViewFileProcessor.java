@@ -30,10 +30,6 @@ public class MapViewFileProcessor {
     private final EscapeUtil escapeUtil;
     private final AppConfig.FileConfig fileConfig;
 
-    @Setter
-    @Getter
-    String errorMessage;
-
     public MapViewFileEntity validateAndBuildFileCall(String rptCd, List<Object> params, String empNo, String jobGb) {
         String ip = clientIPAspect.getClientIP();
         String userAgent = userAgentUtil.getUserAgent();
@@ -106,8 +102,8 @@ public class MapViewFileProcessor {
                 result.add(entity);
             }
         } catch (IllegalArgumentException e) {
-            errorMessage = "processFileUpload: executeDynamicFileQuery failed for rptCd: " + rptCd;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "processFileUpload: executeDynamicFileQuery failed for rptCd: " + rptCd;
+            logger.error(errorMsg, e.getMessage(), e);
             throw e;
         }
 
@@ -139,8 +135,8 @@ public class MapViewFileProcessor {
                 result.add(entity);
             }
         } catch (IllegalArgumentException e) {
-            errorMessage = "processFileDelete: executeDynamicFileQuery failed for rptCd: " + rptCd;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "processFileDelete: executeDynamicFileQuery failed for rptCd: " + rptCd;
+            logger.error(errorMsg, e.getMessage(), e);
             throw e;
         }
 
@@ -164,8 +160,8 @@ public class MapViewFileProcessor {
                 result.add(entity);
             }
         } catch (IllegalArgumentException e) {
-            errorMessage = "processFileRetrieval: executeDynamicFileQuery failed for rptCd: " + rptCd;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "processFileRetrieval: executeDynamicFileQuery failed for rptCd: " + rptCd;
+            logger.error(errorMsg, e.getMessage(), e);
             throw e;
         }
 
@@ -215,8 +211,8 @@ public class MapViewFileProcessor {
                     .collect(Collectors.joining(", "));
             procInfo.setDynamicCall(procedureName + " " + joinedParams); // Use space for MSSQL EXEC
         } catch (IllegalArgumentException e) {
-            errorMessage = "Validation error for rptCd: " + rptCd;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "Validation error for rptCd: " + rptCd;
+            logger.error(errorMsg, e.getMessage(), e);
             throw e;
         }
 
@@ -224,9 +220,9 @@ public class MapViewFileProcessor {
         try {
             resultList = dynamicQueryFileService.executeDynamicQuery(procInfo.getDynamicCall());
         } catch (IllegalArgumentException e) {
-            errorMessage = "Database error for rptCd: " + rptCd;
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
-            throw new IllegalArgumentException(this.getErrorMessage() + ": " + e.getMessage());
+            String errorMsg = "Database error for rptCd: " + rptCd;
+            logger.error(errorMsg, e.getMessage(), e);
+            throw new IllegalArgumentException(errorMsg + ": " + e.getMessage());
         }
 
         List<Map<String, Object>> unescapedResultList = resultList.stream()

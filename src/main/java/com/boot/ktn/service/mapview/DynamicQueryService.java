@@ -25,10 +25,6 @@ public class DynamicQueryService {
 
     private final DataSource dataSource;
 
-    @Setter
-    @Getter
-    String errorMessage;
-
     public List<Map<String, Object>> executeDynamicQuery(String procedureCall) {
         List<Map<String, Object>> mappedResult = new ArrayList<>();
         Connection connection = null;
@@ -75,8 +71,8 @@ public class DynamicQueryService {
             }
 
         } catch (Exception e) {
-            errorMessage = "Error executing stored procedure: {}, Error: {}";
-            logger.error(this.getErrorMessage(), procedureCall, e.getMessage(), e);
+            String errorMsg = "Error executing stored procedure: {}, Error: {}";
+            logger.error(errorMsg, procedureCall, e.getMessage(), e);
             throw new IllegalArgumentException("데이터베이스 오류: " + e.getMessage());
         } finally {
             try {
@@ -84,8 +80,8 @@ public class DynamicQueryService {
                 if (stmt != null) stmt.close();
                 DataSourceUtils.releaseConnection(connection, dataSource);
             } catch (Exception e) {
-                errorMessage = "Error closing resources: {}";
-                logger.error(this.getErrorMessage(), e.getMessage(), e);
+                String errorMsg = "Error closing resources: {}";
+                logger.error(errorMsg, e.getMessage(), e);
             }
         }
 
@@ -98,8 +94,8 @@ public class DynamicQueryService {
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
             if (columnCount == 0) {
-                errorMessage = "No columns found in ResultSet";
-                logger.warn(this.getErrorMessage());
+                String errorMsg = "No columns found in ResultSet";
+                logger.warn(errorMsg);
                 columnNames.add("col1");
                 return columnNames;
             }
@@ -108,8 +104,8 @@ public class DynamicQueryService {
                 columnNames.add(columnName);
             }
         } catch (Exception e) {
-            errorMessage = "Failed to extract column names: {}";
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            String errorMsg = "Failed to extract column names: {}";
+            logger.error(errorMsg, e.getMessage(), e);
             columnNames.add("col1");
         }
         return columnNames;

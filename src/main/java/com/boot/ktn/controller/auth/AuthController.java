@@ -48,7 +48,7 @@ public class AuthController {
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
             jwtCookie.setMaxAge(0);
-            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setSecure(true);
             jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
             response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity("Missing token", 401);
@@ -73,7 +73,7 @@ public class AuthController {
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
             jwtCookie.setMaxAge(0);
-            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setSecure(true);
             jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
             response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 401);
@@ -92,7 +92,7 @@ public class AuthController {
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
             jwtCookie.setMaxAge(0);
-            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setSecure(true);
             jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
             response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity("Missing token", 401);
@@ -142,7 +142,7 @@ public class AuthController {
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");
             jwtCookie.setMaxAge(0);
-            jwtCookie.setSecure(jwtUtil.getCookieSecure());
+            jwtCookie.setSecure(true);
             jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
             response.addCookie(jwtCookie);
             return responseEntityUtil.errBodyEntity(this.getErrorMessage() + e.getMessage(), 401);
@@ -156,7 +156,7 @@ public class AuthController {
         jwtCookie.setHttpOnly(true);
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
-        jwtCookie.setSecure(jwtUtil.getCookieSecure());
+        jwtCookie.setSecure(true);
         jwtCookie.setAttribute("SameSite", jwtUtil.getCookieSameSite());
         response.addCookie(jwtCookie);
 
