@@ -88,6 +88,40 @@ public class ExcelUploadService {
     }
 
     /**
+     * MS SQL Server용 테이블명/컬럼명 안전하게 이스케이프
+     * @param identifier 이스케이프대상명
+     */
+    private String escapeIdentifier(String identifier) {
+        if (identifier == null || identifier.isEmpty()) {
+            throw new IllegalArgumentException("테이블명이 null이거나 비어있습니다.");
+        }
+
+        String trimmed = identifier.trim();
+
+        // 1. 기본 형식 검증: 영문, 숫자, 언더스코어, 점(.)만 허용 (스키마.테이블 허용)
+        if (!trimmed.matches("^[a-zA-Z0-9_\\.]+$")) {
+            logger.error("허용되지 않는 문자가 포함된 테이블명: {}", trimmed);
+            throw new IllegalArgumentException("유효하지 않은 테이블명 형식입니다: " + trimmed);
+        }
+
+        // 2. MSSQL 예약어 간단 체크 (주요 위험 키워드만)
+        String upper = trimmed.toUpperCase();
+        String[] reservedKeywords = {
+                "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "TRUNCATE", "ALTER",
+                "EXEC", "EXECUTE", "XP_", "SP_", "SYS", "INFORMATION_SCHEMA", "DBO"
+        };
+        for (String keyword : reservedKeywords) {
+            if (upper.equals(keyword) || upper.startsWith(keyword + ".") || upper.contains("." + keyword)) {
+                logger.error("예약어 또는 위험한 패턴이 포함된 테이블명 감지: {}", trimmed);
+                throw new IllegalArgumentException("사용할 수 없는 테이블명입니다: " + trimmed);
+            }
+        }
+
+        // 3. MSSQL 방식: 대괄호로 감싸기 → [dbo.my_table]
+        return "[" + trimmed + "]";
+    }
+
+    /**
      * 엑셀 파일 업로드 처리
      * @param rptCd 업로드 키코드
      * @param workbook 엑셀 워크북
@@ -110,41 +144,35 @@ public class ExcelUploadService {
             throw new IllegalArgumentException(errorMsg);
         }
 
-        // 대상 테이블 TRUNCATE
-        Connection conn = null;
-        Statement stmt = null;
+        String safeTableName = escapeIdentifier(tableInfo.getTargetTable()); // 화이트리스트로 확정
+        String proc = "{CALL UP_EXCELUPLOADTABLEINIT_TRANSACTION(?, ?)}";
 
-        try {
-            conn = dataSource.getConnection();
+        try (Connection conn = dataSource.getConnection();
+             CallableStatement cs = conn.prepareCall(proc)) {
             conn.setAutoCommit(false);
-            String targetTable = tableInfo.getTargetTable();
-            String deleteSql = "DELETE FROM " + targetTable;
-            try (PreparedStatement pstmt = conn.prepareStatement(deleteSql)) {
-                pstmt.executeUpdate();
+            cs.setString(1, safeTableName);
+            cs.setString(2, "F");
+            cs.execute();
+
+            // 프로시저 내부에서 결과셋으로 반환하는 오류코드와 메시지 받기 위해서는 다음과 같이 할 수도 있습니다.
+            // (프로시저가 SELECT문으로 결과 반환하므로)
+            try (ResultSet rs = cs.getResultSet()) {
+                if (rs != null && rs.next()) {
+                    String errCd = rs.getString("errCd");
+                    String errMsg = rs.getString("errMsg");
+                    if (!"00".equals(errCd)) {
+                        throw new SQLException("프로시저 오류 코드: " + errCd + ", 메시지: " + errMsg);
+                    }
+                }
             }
+
             conn.commit();
+            logger.info("엑셀 업로드 전 기존 데이터 초기화 완료 → 테이블: {}", safeTableName);
 
         } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    logger.error("트랜잭션 롤백 실패", ex);
-                }
-            }
-            String errorMsg = "테이블 TRUNCATE 실패: " + tableInfo.getTargetTable();
-            logger.error(errorMsg, e);
-            throw new IllegalArgumentException(errorMsg, e);
-        } finally {
-            try {
-                if (stmt != null) stmt.close();
-                if (conn != null) {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                logger.error("데이터베이스 자원 해제 오류", e);
-            }
+            logger.error("기존 데이터 초기화 실패 → 테이블: {}", safeTableName, e);
+            insertExcelUploadHist(rptCd, "N", "기존 데이터 초기화 실패: " + e.getMessage());
+            throw new IllegalArgumentException("엑셀 업로드 전 기존 데이터 초기화에 실패했습니다.", e);
         }
 
         int currentRowNum = 0; // 오류 추적용 행 번호

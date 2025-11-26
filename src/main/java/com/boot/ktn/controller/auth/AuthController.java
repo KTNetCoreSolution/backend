@@ -124,6 +124,8 @@ public class AuthController {
             if (extend) {
                 String newToken = jwtUtil.generateToken(empNo, auth, empNm, orgCd, orgNm, levelCd);
                 Cookie jwtCookie = jwtUtil.createJwtCookie(newToken);
+                jwtCookie.setHttpOnly(true);
+                jwtCookie.setSecure(true);
                 response.addCookie(jwtCookie);
 
                 Claims newClaims = Jwts.parserBuilder()
