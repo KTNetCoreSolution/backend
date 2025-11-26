@@ -44,7 +44,6 @@ public class CarInfoListController {
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        logger.error("임시 테스트");
         String rptCd = "CARLISTINFO";
         String jobGb = "GET";
 
