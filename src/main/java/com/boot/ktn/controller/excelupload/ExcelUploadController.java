@@ -62,21 +62,16 @@ public class ExcelUploadController {
             HttpServletRequest httpRequest) {
 
         // 필수 파라미터 검증
-        logger.error("엑셀업로드 임시 테스트");
-        
         if (rptCd == null || rptCd.trim().isEmpty()) {
-            logger.error("업로드 키코드(rptCd)가 필요합니다.");
             return responseEntityUtil.okBodyEntity(null, "01", "업로드 키코드(rptCd)가 필요합니다.");
         }
 
         if (file == null || file.isEmpty()) {
-            logger.error("엑셀 파일(file)이 필요합니다.");
             return responseEntityUtil.okBodyEntity(null, "01", "엑셀 파일(file)이 필요합니다.");
         }
 
         // 파일 크기 검증
         if (file.getSize() > fileConfig.getMaxFileSize()) {
-            logger.error("파일 크기가 제한을 초과했습니다.");
             return responseEntityUtil.okBodyEntity(null, "01", "파일 크기가 " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB 제한을 초과했습니다.");
         }
 
