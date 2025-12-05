@@ -30,13 +30,13 @@ public interface LoginMapper {
             SELECT
               STRING_AGG(ISNULL(e.ORGCD, d.ORGCD), ',') AS CARMNGORGCD,
               STRING_AGG(ISNULL(g.NAME, f.NAME), ',') AS CARMNGORGNM
-            FROM tb_userinfo_fix d
+            FROM tb_userinfo d
             LEFT JOIN tb_moduleorgauthinfo e ON a.EMPNO = e.AUTHOPERATOR AND e.MODULETYPE = 'CAR'
             LEFT JOIN tb_ktnorg_fix f ON d.ORGCD = f.CODE
             LEFT JOIN tb_ktnorg_fix g ON e.ORGCD = g.CODE
             WHERE a.EMPNO = d.EMPNO
         ) car
-        LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
+        LEFT JOIN tb_userinfo fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
         LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
@@ -67,13 +67,13 @@ public interface LoginMapper {
             SELECT
               STRING_AGG(ISNULL(e.ORGCD, d.ORGCD), ',') AS CARMNGORGCD,
               STRING_AGG(ISNULL(g.NAME, f.NAME), ',') AS CARMNGORGNM
-            FROM tb_userinfo_fix d
+            FROM tb_userinfo d
             LEFT JOIN tb_moduleorgauthinfo e ON a.EMPNO = e.AUTHOPERATOR AND e.MODULETYPE = 'CAR'
             LEFT JOIN tb_ktnorg_fix f ON d.ORGCD = f.CODE
             LEFT JOIN tb_ktnorg_fix g ON e.ORGCD = g.CODE
             WHERE a.EMPNO = d.EMPNO
         ) car
-        LEFT JOIN tb_userinfo_fix fixuser ON a.EMPNO = fixuser.EMPNO
+        LEFT JOIN tb_userinfo fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
         LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
