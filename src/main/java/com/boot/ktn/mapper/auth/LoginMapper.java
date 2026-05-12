@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface LoginMapper {
     @Select("""
-		SELECT
+		SELECT TOP 1
           a.EMPNO AS empNo,
           a.EMPNM AS empNm,
           a.EMPPWD AS empPwd,
@@ -38,14 +38,20 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
-        LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
+        OUTER APPLY (
+            SELECT ORGCD, SECTIONCD, SECTIONNM, CASE WHEN SECTIONCD = 'LINE' THEN 1 WHEN SECTIONCD = 'DESIGN' THEN 2 WHEN SECTIONCD = 'BIZ' THEN 3 END SECTIONORDER
+            FROM tb_standardactivity_orgsection h
+            WHERE a.ORGCD = h.ORGCD
+        ) st
+        --LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
         AND a.EMPPWD = #{empPw}
+        ORDER BY st.SECTIONORDER
     """)
     LoginEntity loginCheck(@Param("empNo") String empNo, @Param("empPw") String empPw);
 
     @Select("""
-		SELECT
+		SELECT TOP 1
           a.EMPNO AS empNo,
           a.EMPNM AS empNm,
           a.EMPPWD AS empPwd,
@@ -75,8 +81,14 @@ public interface LoginMapper {
         ) car
         LEFT JOIN tb_userinfo fixuser ON a.EMPNO = fixuser.EMPNO
         LEFT JOIN tb_ktnorg_fix fixorg ON fixuser.ORGCD = fixorg.CODE
-        LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
+        OUTER APPLY (
+            SELECT ORGCD, SECTIONCD, SECTIONNM, CASE WHEN SECTIONCD = 'LINE' THEN 1 WHEN SECTIONCD = 'DESIGN' THEN 2 WHEN SECTIONCD = 'BIZ' THEN 3 END SECTIONORDER
+            FROM tb_standardactivity_orgsection h
+            WHERE a.ORGCD = h.ORGCD
+        ) st
+        --LEFT JOIN tb_standardactivity_orgsection st ON a.ORGCD = st.ORGCD
         WHERE a.EMPNO = #{empNo}
+        ORDER BY st.SECTIONORDER
     """)
     LoginEntity loginCheckManager(@Param("empNo") String empNo);
 }
