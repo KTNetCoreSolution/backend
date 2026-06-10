@@ -92,6 +92,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'      // 기본 테스트
 	testImplementation "org.mybatis.spring.boot:mybatis-spring-boot-starter-test:${mybatisVersion}" // MyBatis 테스트
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                 // JUnit 런처
+
+	// 로컬 lib
+	implementation files('lib/KTDS-QCommonLib-Token.jar')
 }
 
 tasks.register('copyFrontend', Copy) {

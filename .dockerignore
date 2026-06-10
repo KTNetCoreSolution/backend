@@ -5,6 +5,7 @@ out/
 
 # 실행 가능한 jar 등 결과물
 *.jar
+!lib/KTDS-QCommonLib-Token.jar
 *.war
 *.class
 

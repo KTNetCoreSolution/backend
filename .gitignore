@@ -4,6 +4,7 @@
 /out/
 *.class
 *.jar
+!lib/KTDS-QCommonLib-Token.jar
 *.war
 *.ear
 

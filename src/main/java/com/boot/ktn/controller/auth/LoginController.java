@@ -6,9 +6,9 @@ import com.boot.ktn.entity.auth.LoginEntity;
 import com.boot.ktn.entity.auth.LoginResultEntity;
 import com.boot.ktn.service.auth.LoginResultService;
 import com.boot.ktn.service.auth.LoginService;
-import com.boot.ktn.service.mapview.MapViewFileProcessor;
 import com.boot.ktn.service.mapview.MapViewProcessor;
 import com.boot.ktn.util.*;
+import com.ktds.portal.qcommon.library.util.CommonUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,14 +32,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.UnsupportedEncodingException;
+import com.ktds.portal.qcommon.library.security.encrypt.util.AESCipherUtil;
+
 import java.net.URI;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("${api.base.path}/auth")
@@ -312,6 +311,81 @@ public class LoginController {
         }
 
         return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("sso/QPortalLogin")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> qPortalLogin(
+            @NotNull @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response,
+            HttpSession session) {
+        String ssoToken = request.get("ssoToken");
+        logger.debug("ssoToken: {}", ssoToken);
+
+        if (ssoToken == null || ssoToken.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
+        }
+
+        try {
+            String encKey = "12345678901234567890123456789012";
+
+            String decordToken = AESCipherUtil.decryptAES(ssoToken, encKey);
+
+            Map<String, String> userInfo = CommonUtil.stringToMap(decordToken, "||");
+            logger.debug("decordToken: {}", decordToken);
+
+            String empNo = userInfo.get("userId");
+            logger.debug("empNo: {}", empNo);
+
+            if (empNo.isEmpty() || "null".equals(empNo)) {
+                logger.error("q-portal 인증 실패.");
+                return responseEntityUtil.errBodyEntity("q-portal 인증 실패", 401);
+            }
+
+            LoginEntity loginEntity = loginService.ssoLoginCheck(empNo);
+
+            if (loginEntity != null) {
+                return processLoginSuccess(loginEntity, response, empNo);
+            } else {
+                return responseEntityUtil.okBodyEntity(null, "01", "아이디 또는 비밀번호가 잘못되었습니다.");
+            }
+        } catch (Exception e) {
+            errorMessage = "로그인 처리 중 오류 발생: ";
+            logger.error(errorMessage, e.getMessage(), e);
+            System.out.println(errorMessage + e.getMessage());
+            return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
+        }
+    }
+
+    @CommonApiResponses
+    @PostMapping("sso/makeQPortalToken")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> makeQPortalToken(
+            @NotNull @RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response,
+            HttpSession session) {
+        String empNo = request.get("empNo");
+        logger.debug("empNo: {}", empNo);
+
+        if (empNo == null || empNo.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "empNo는 필수입니다.");
+        }
+
+        try {
+            String encKey = "12345678901234567890123456789012";
+            String stringData = "userId:" + empNo + "||TEST:test";
+            String encodeToken = AESCipherUtil.encryptAES(stringData, encKey);
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("sso_token", encodeToken);
+
+            return responseEntityUtil.okBodyEntity(responseData);
+        } catch (Exception e) {
+            errorMessage = "토큰 작성 중 오류 발생: ";
+            logger.error(errorMessage, e.getMessage(), e);
+            System.out.println(errorMessage + e.getMessage());
+            return responseEntityUtil.errBodyEntity(errorMessage + e.getMessage(), 500);
+        }
     }
 
     /**
