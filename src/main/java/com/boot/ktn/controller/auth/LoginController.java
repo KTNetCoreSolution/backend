@@ -320,15 +320,26 @@ public class LoginController {
             HttpServletRequest httpRequest,
             HttpServletResponse response,
             HttpSession session) {
+
         String ssoToken = request.get("ssoToken");
+        String domain = request.get("domain");
+
         logger.debug("ssoToken: {}", ssoToken);
+        logger.debug("domain: {}", domain);
 
         if (ssoToken == null || ssoToken.isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "SSO 토큰은 필수입니다.");
         }
 
         try {
-            String encKey = "12345678901234567890123456789012";
+            String encKey = "";
+
+            if (domain.equalsIgnoreCase("localhost") || domain.equalsIgnoreCase("devbimo.ktnetcore.com")) {
+                encKey = "12345678901234567890123456789012";
+            }
+            else {
+                encKey = "e3957e6c59014cdd9fb7ff8eca8bec6d";
+            }
 
             String decordToken = AESCipherUtil.decryptAES(ssoToken, encKey);
 
