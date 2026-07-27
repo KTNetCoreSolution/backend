@@ -25,10 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("${api.base.path}/report")
@@ -139,12 +136,12 @@ public class ReportInfoController {
     }
 
     @CommonApiResponses
-    @PostMapping("/dataList")
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> dataList(
+    @PostMapping("/listData")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> listData(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest
     ) {
-        String rptCd = "REPORTDATALIST";
+        String rptCd = "REPORTLISTDATA";
         String jobGb = "GET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -169,18 +166,140 @@ public class ReportInfoController {
     }
 
     @CommonApiResponses
-    @PostMapping(value = "/reportUpload", consumes = {"multipart/form-data"})
-    public ResponseEntity<ApiResponseDto<List<MapViewFileEntity>>> reportUpload(
-            String pGUBUN,
-            String pREPORTID,
-            String pGBN,
-            String pTITLE,
+    @PostMapping("/detailInfo")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> detailInfo(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "REPORTDETAIL";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/reportList unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping("/reportDataTran")
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> reportDataTran(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest) {
+
+        String gubun = (String) request.get("gubun");
+        String reportId = (String) request.get("reportId");
+        String reportNo = (String) request.get("reportNo");
+        String title = (String) request.get("title");
+        String content = (String) request.get("content");
+
+        if (gubun == null || gubun.trim().isEmpty() || reportId == null || reportId.trim().isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "파라미터가 잘못되어 있습니다.");
+        }
+
+        if (title == null || title.trim().isEmpty() || content == null || content.trim().isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "제목과 내용을 입력해주세요.");
+        }
+
+        String rptCd = "REPORTTRAN";
+        String jobGb = "SET";
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : "admin";
+
+        List<String> params = Arrays.asList(
+                escapeUtil.escape(gubun),
+                escapeUtil.escape(reportId),
+                escapeUtil.escape(reportNo),
+                escapeUtil.escape(title),
+                escapeUtil.escape(content),
+                escapeUtil.escape(empNo)
+        );
+
+        try {
+            List<Map<String, Object>> resultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+
+            if (resultList.isEmpty()) {
+                return responseEntityUtil.okBodyEntity(null, "01", "REPORT 저장 실패: 결과가 없습니다.");
+            }
+
+            Map<String, Object> result = resultList.get(0);
+            Long getReportId = Long.parseLong(result.getOrDefault("REPORTID", "-1").toString());
+            Long getReportNo = Long.parseLong(result.getOrDefault("REPORTNO", "-1").toString());
+
+            if (getReportId == -1 || getReportNo == -1) {
+                throw new IllegalArgumentException("REPORTID, REPORTNO 반환 실패");
+            }
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("success", true);
+            responseData.put("message", "게시물이 성공적으로 저장되었습니다.");
+            responseData.put("reportId", getReportId);
+            responseData.put("reportNo", getReportNo);
+
+            return responseEntityUtil.okBodyEntity(responseData);
+        } catch (Exception e) {
+            errorMessage = "/reportDataTran unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", "게시물 저장 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    @CommonApiResponses
+    @PostMapping("/reportFileList")
+    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> reportFileList(
+            @RequestBody Map<String, Object> request,
+            HttpServletRequest httpRequest
+    ) {
+        String rptCd = "REPORTFILES";
+        String jobGb = "GET";
+
+        Claims claims = (Claims) httpRequest.getAttribute("user");
+        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
+
+        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
+
+        List<Map<String, Object>> unescapedResultList;
+        try {
+            unescapedResultList = mapViewFileProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+        } catch (IllegalArgumentException e) {
+            errorMessage = "/reportFileList unescapedResultList = mapViewFileProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
+        }
+
+        if (unescapedResultList.isEmpty()) {
+            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
+        }
+
+        return responseEntityUtil.okBodyEntity(unescapedResultList);
+    }
+
+    @CommonApiResponses
+    @PostMapping(value = "/fileSave", consumes = {"multipart/form-data"})
+    public ResponseEntity<ApiResponseDto<List<MapViewFileEntity>>> fileSave(
+            String gubun,
+            String fileId,
+            String reportId,
+            String reportNo,
             MultipartFile[] files,
             HttpServletRequest httpRequest) {
 
         // Validate required parameters
-        if (pGUBUN == null || pGUBUN.trim().isEmpty() || pREPORTID == null || pREPORTID.trim().isEmpty()
-                 || pGBN == null || pGBN.trim().isEmpty() || pTITLE == null || pTITLE.trim().isEmpty()) {
+        if (gubun == null || gubun.trim().isEmpty() || reportId == null || reportId.trim().isEmpty() || reportNo == null || reportNo.trim().isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "필수파라미터가 잘못되어 있습니다.");
         }
 
@@ -192,9 +311,7 @@ public class ReportInfoController {
             return responseEntityUtil.okBodyEntity(null, "01", "파일 크기가 " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB 제한을 초과했습니다.");
         }
 
-        final Set<String> ALLOWED_EXTENSIONS = Set.of("xlsx", "xls");
-
-        String rptCd = "REPORTINFOTRAN";
+        String rptCd = "REPORTFILESTRAN";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -210,31 +327,33 @@ public class ReportInfoController {
                     continue;
                 }
 
+                final Set<String> ALLOWED_EXTENSIONS = Set.of("xlsx", "xls");
+
                 String fileType = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+                String fileSize = String.valueOf(file.getSize());
+
+                List<Object> params = new ArrayList<>();
+                params.add(escapeUtil.escape(gubun));
+                params.add(escapeUtil.escape(fileId != null ? fileId : ""));
+                params.add(escapeUtil.escape(reportId));
+                params.add(escapeUtil.escape(reportNo));
+                params.add(escapeUtil.escape(empNo));
+                params.add(escapeUtil.escape(fileName));
+                params.add(escapeUtil.escape(fileType));
+                params.add(escapeUtil.escape(fileSize));
+
+                byte[] fileData = file.getBytes();
+                params.add(fileData); // LONGBLOB data
+
                 if (!ALLOWED_EXTENSIONS.contains(fileType)) {
                     return responseEntityUtil.okBodyEntity(null, "01",
                             "허용되지 않는 파일 형식입니다. (허용: " + String.join(", ", ALLOWED_EXTENSIONS) + ")");
                 }
 
-                if (file.getSize() > fileConfig.getMaxFileSize()) {
-                    return responseEntityUtil.okBodyEntity(null, "01",
-                            "파일 크기가 제한을 초과했습니다. (최대 " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB)");
+                if (fileData.length > fileConfig.getMaxFileSize()) {
+                    throw new IllegalArgumentException("File size exceeds " + (fileConfig.getMaxFileSize() / (1024 * 1024)) + "MB limit");
                 }
 
-                String fileSize = String.valueOf(file.getSize());
-
-                List<Object> params = new ArrayList<>();
-                params.add(escapeUtil.escape(pGUBUN));
-                params.add(escapeUtil.escape(pREPORTID));
-                params.add("");
-                params.add(escapeUtil.escape(pGBN));
-                params.add(escapeUtil.escape(pTITLE));
-                params.add(escapeUtil.escape(empNo));
-                params.add(escapeUtil.escape(fileName));
-                params.add(escapeUtil.escape(fileType));
-                params.add(escapeUtil.escape(fileSize));
-                byte[] fileData = file.getBytes();
-                params.add(fileData); // LONGBLOB data
                 List<MapViewFileEntity> fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);
 
                 result.addAll(fileResult);
@@ -251,35 +370,36 @@ public class ReportInfoController {
 
             return responseEntityUtil.okBodyEntity(result);
         } catch (IllegalArgumentException e) {
-            errorMessage = "/reportUpload fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
+            errorMessage = "/fileSave fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             return responseEntityUtil.okBodyEntity(null, "01", "File upload failed: " + e.getMessage());
         } catch (Exception e) {
-            errorMessage = "/reportUpload fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
+            errorMessage = "/fileSave fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             return responseEntityUtil.okBodyEntity(null, "01", "File upload failed: " + e.getMessage());
         }
     }
 
-    @CommonApiResponses
-    @PostMapping(value = "/reportInfoSave")
-    public ResponseEntity<ApiResponseDto<List<MapViewFileEntity>>> reportInfoSave(
+    @PostMapping(value = "/fileDelete")
+    public ResponseEntity<ApiResponseDto<List<MapViewFileEntity>>> fileDelete(
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest) {
 
-        String pGUBUN = (String) request.get("pGUBUN");
-        String pREPORTID = (String) request.get("pREPORTID");
-        String pREPORTNO = (String) request.get("pREPORTNO");
-        String pGBN = (String) request.get("pGBN");
-        String pTITLE = (String) request.get("pTITLE");
+        String gubun = (String) request.get("gubun");
+        String fileId = (String) request.get("fileId");
+        String reportId = (String) request.get("reportId");
+        String reportNo = (String) request.get("reportNo");
 
         // Validate required parameters
-        if (pGUBUN == null || pGUBUN.trim().isEmpty() || pREPORTID == null || pREPORTID.trim().isEmpty() || pREPORTNO == null || pREPORTNO.trim().isEmpty()
-                || pGBN == null || pGBN.trim().isEmpty() || pTITLE == null || pTITLE.trim().isEmpty()) {
+        if (gubun == null || gubun.trim().isEmpty() || reportId == null || reportId.trim().isEmpty() || reportNo == null || reportNo.trim().isEmpty()) {
             return responseEntityUtil.okBodyEntity(null, "01", "필수파라미터가 잘못되어 있습니다.");
         }
 
-        String rptCd = "REPORTINFOTRAN";
+        if (!"D".equals(gubun)) {
+            return responseEntityUtil.okBodyEntity(null, "01", "Invalid gubun value for deletion. Must be 'D'.");
+        }
+
+        String rptCd = "REPORTFILESTRAN";
         String jobGb = "SET";
 
         Claims claims = (Claims) httpRequest.getAttribute("user");
@@ -289,11 +409,10 @@ public class ReportInfoController {
         try {
             // Deletion does not require file data, only metadata
             List<Object> params = new ArrayList<>();
-            params.add(escapeUtil.escape(pGUBUN));
-            params.add(escapeUtil.escape(pREPORTID));
-            params.add(escapeUtil.escape(pREPORTNO));
-            params.add(escapeUtil.escape(pGBN));
-            params.add(escapeUtil.escape(pTITLE));
+            params.add(escapeUtil.escape(gubun));
+            params.add(escapeUtil.escape(fileId != null ? fileId : ""));
+            params.add(escapeUtil.escape(reportId));
+            params.add(escapeUtil.escape(reportNo));
             params.add(escapeUtil.escape(empNo));
             params.add(""); // pFILENM (empty for deletion)
             params.add(""); // pFILETYPE (empty for deletion)
@@ -309,43 +428,13 @@ public class ReportInfoController {
 
             return responseEntityUtil.okBodyEntity(result, "00", "File deleted successfully.");
         } catch (IllegalArgumentException e) {
-            errorMessage = "/carCodeInfoSave fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
+            errorMessage = "/fileDelete fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             return responseEntityUtil.okBodyEntity(null, "01", "File deletion failed: " + e.getMessage());
         } catch (Exception e) {
-            errorMessage = "/carCodeInfoSave fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
+            errorMessage = "/fileDelete fileResult = mapViewFileProcessor.processFileUpload(rptCd, params, empNo, jobGb);";
             logger.error(this.getErrorMessage(), e.getMessage(), e);
             return responseEntityUtil.okBodyEntity(null, "01", "File deletion failed: " + e.getMessage());
         }
-    }
-
-    @CommonApiResponses
-    @PostMapping("/filedata")
-    public ResponseEntity<ApiResponseDto<List<Map<String, Object>>>> filedata(
-            @RequestBody Map<String, Object> request,
-            HttpServletRequest httpRequest
-    ) {
-        String rptCd = "REPORTFILEDATA";
-        String jobGb = "GET";
-
-        Claims claims = (Claims) httpRequest.getAttribute("user");
-        String empNo = claims != null && claims.getSubject() != null ? claims.getSubject() : null;
-
-        List<String> params = mapViewParamsUtil.getParams(request, escapeUtil);
-
-        List<Map<String, Object>> unescapedResultList;
-        try {
-            unescapedResultList = mapViewFileProcessor.processDynamicView(rptCd, params, empNo, jobGb);
-        } catch (IllegalArgumentException e) {
-            errorMessage = "/filedata unescapedResultList = mapViewFileProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
-            logger.error(this.getErrorMessage(), e.getMessage(), e);
-            return responseEntityUtil.okBodyEntity(null, "01", e.getMessage());
-        }
-
-        if (unescapedResultList.isEmpty()) {
-            return responseEntityUtil.okBodyEntity(null, "01", "조회 결과가 없습니다.");
-        }
-
-        return responseEntityUtil.okBodyEntity(unescapedResultList);
     }
 }
