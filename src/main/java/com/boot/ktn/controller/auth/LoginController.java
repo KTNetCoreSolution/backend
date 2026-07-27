@@ -35,9 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.ktds.portal.qcommon.library.security.encrypt.util.AESCipherUtil;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @RestController
@@ -73,14 +71,40 @@ public class LoginController {
         String empPwd = request.get("empPwd");
         String captchaInput = request.get("captchaInput");
 
-        if (empNo == null || empPwd == null || captchaInput == null) {
-            return responseEntityUtil.okBodyEntity(null, "01", "아이디, 비밀번호, 캡챠는 필수입니다.");
+        if (empNo == null || empPwd == null) {
+            return responseEntityUtil.okBodyEntity(null, "01", "아이디, 비밀번호는 필수입니다.");
         }
 
+        String rptCd = "BYPASSCAPTCHA";
+        String jobGb = "GET";
+
+        List<String> params = new ArrayList<>();
+        params.add("F");
+
+        boolean byPassCaptcha = false;
+
+        try {
+            List<Map<String, Object>> resultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);
+            byPassCaptcha = resultList.stream().anyMatch(m -> empNo.equals(String.valueOf(m.get("EMPNO"))));
+        } catch (Exception e) {
+            errorMessage = "/byPassChaptcha unescapedResultList = mapViewProcessor.processDynamicView(rptCd, params, empNo, jobGb);";
+            logger.error(this.getErrorMessage(), e.getMessage(), e);
+            return responseEntityUtil.okBodyEntity(null, "01", "로그인 중 오류가 발생했습니다: " + e.getMessage());
+        }
+
+        //if (empNo == null || empPwd == null || captchaInput == null) {
+            //return responseEntityUtil.okBodyEntity(null, "01", "아이디, 비밀번호, 캡챠는 필수입니다.");
+        //}
+
         // Verify CAPTCHA
-        String captchaText = (String) session.getAttribute("captchaText");
-        if (!captchaInput.equalsIgnoreCase(captchaText)) {
-            return responseEntityUtil.okBodyEntity(null, "01", "캡챠가 일치하지 않습니다.");
+        if(!byPassCaptcha) {
+            if (captchaInput == null || captchaInput.trim().isEmpty()) {
+                return responseEntityUtil.okBodyEntity(null, "01", "캡챠를 입력해주세요.");
+            }
+            String captchaText = (String) session.getAttribute("captchaText");
+            if (!captchaInput.equalsIgnoreCase(captchaText)) {
+                return responseEntityUtil.okBodyEntity(null, "01", "캡챠가 일치하지 않습니다.");
+            }
         }
 
         try {
